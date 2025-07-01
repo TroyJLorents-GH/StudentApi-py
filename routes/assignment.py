@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime, timezone
+from fastapi.responses import StreamingResponse
 import csv
 import io
 
@@ -12,6 +13,7 @@ from utils.assignment_utils import calculate_compensation, compute_cost_center_k
 from schemas.assignment_schema import StudentClassAssignmentCreate
 from schemas.assignment import StudentClassAssignmentRead
 from fastapi.encoders import jsonable_encoder
+from models.student import StudentLookup
 
 
 router = APIRouter(prefix="/api/StudentClassAssignment", tags=["StudentClassAssignment"])
@@ -22,6 +24,31 @@ router = APIRouter(prefix="/api/StudentClassAssignment", tags=["StudentClassAssi
 def get_assignments(db: Session = Depends(get_db)):
     return db.query(StudentClassAssignment).all()
 
+
+@router.get("/template")
+def download_template():
+    headers = [
+        "Position", "FultonFellow", "WeeklyHours", "Student_ID", "First_Name",
+        "Last_Name", "Email", "EducationLevel", "Subject", "CatalogNum",
+        "InstructorFirstName", "InstructorLastName", "ClassSession", "ClassNum",
+        "Term", "Location", "Campus", "AcadCareer"
+    ]
+    example_row = [
+        "IA/TA/Grader", "Yes/No", "5/10/15/20", "10 digit Id", "Name",
+        "Last Name", "email@xxx.edu", "MS/PHD", "CSE/CIS/IEE", "100-700",
+        "First Name", "Last Name", "A/B/C", "12345", "2254",
+        "TEMPE", "TEMPE", "UGRD/GRAD"
+    ]
+
+    csv_content = ",".join(headers) + "\n" + ",".join(example_row) + "\n"
+    # Use StreamingResponse to return a downloadable file
+    return StreamingResponse(
+        iter([csv_content]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=BulkUploadTemplate.csv"
+        }
+    )
 
 # GET by ID
 @router.get("/{assignment_id}", response_model=dict)
@@ -88,9 +115,6 @@ def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_d
 
         row["CreatedAt"] = now
         row["Term"] = "2254"
-        row["Location"] = "TEMPE"
-        row["Campus"] = "TEMPE"
-        row["AcadCareer"] = "UGRD"
 
         try:
             row["WeeklyHours"] = int(row.get("WeeklyHours", 0))
@@ -100,7 +124,14 @@ def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_d
         row["Compensation"] = calculate_compensation(row)
         row["CostCenterKey"] = compute_cost_center_key(row)
 
-        # Create SQLAlchemy object
+        if row.get("FultonFellow") == "Yes":
+            student_id = row.get("Student_ID")
+            student = db.query(StudentLookup).filter(StudentLookup.Student_ID == student_id).first()
+            if student:
+                row["cur_gpa"] = student.Current_GPA
+                row["cum_gpa"] = student.Cumulative_GPA
+
+        # Create SQLAlchemy obj
         try:
             record = StudentClassAssignment(**row)
             records.append(record)
@@ -111,3 +142,6 @@ def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_d
     db.commit()
 
     return {"message": f"{len(records)} records uploaded successfully."}
+
+
+

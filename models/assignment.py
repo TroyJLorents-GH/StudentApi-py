@@ -43,3 +43,5 @@ class StudentClassAssignment(Base):
     SSN_Sent = Column(Boolean, nullable=True)
     Offer_Sent = Column(Boolean, nullable=True)
     Offer_Signed = Column(Boolean, nullable=True)
+    cum_gpa = Column(Float, nullable=True)
+    cur_gpa = Column(Float, nullable=True)

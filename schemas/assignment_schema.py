@@ -22,3 +22,5 @@ class StudentClassAssignmentCreate(BaseModel):
     Campus: str
     AcadCareer: str
     CostCenterKey: str
+    cur_gpa: Optional[float] = None
+    cum_gpa: Optional[float] = None

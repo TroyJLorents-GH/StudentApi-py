@@ -30,6 +30,8 @@ class StudentClassAssignmentRead(BaseModel):
     SSN_Sent: Optional[bool] = None
     Offer_Sent: Optional[bool] = None
     Offer_Signed: Optional[bool] = None
+    cum_gpa: Optional[float] = None
+    cur_gpa: Optional[float] = None
 
     class Config:
         from_attributes = True

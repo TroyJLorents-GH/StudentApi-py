@@ -1,1 +1,9 @@
 .env
+
+# Ignore Python bytecode
+__pycache__/
+*.py[cod]
+
+# VSCode or PyCharm IDE files (optional)
+.vscode/
+.idea/

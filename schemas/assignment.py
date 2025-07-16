@@ -1,10 +1,11 @@
 from pydantic import BaseModel
 from typing import Optional
-
+from datetime import datetime, timezone
 
 class StudentClassAssignmentRead(BaseModel):
     Id: int
     Student_ID: int
+    ASUrite: Optional[str] = None
     Position: str
     WeeklyHours: int
     FultonFellow: str
@@ -22,11 +23,11 @@ class StudentClassAssignmentRead(BaseModel):
     Campus: str
     AcadCareer: str
     CostCenterKey: str
+    CreatedAt: Optional[datetime] = None
 
     First_Name: Optional[str] = None
     Last_Name: Optional[str] = None
     Position_Number: Optional[str] = None
-    I9_Sent: Optional[bool] = None
     SSN_Sent: Optional[bool] = None
     Offer_Sent: Optional[bool] = None
     Offer_Signed: Optional[bool] = None

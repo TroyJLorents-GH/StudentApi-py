@@ -64,6 +64,8 @@ def get_class_details(classNum: str, term: str, db: Session = Depends(get_db)):
             "Location": class_obj.Location,
             "Campus": class_obj.Campus,
             "AcadCareer": class_obj.AcadCareer,
+            "Subject": class_obj.Subject,
+            "CatalogNum": class_obj.CatalogNum,
         }
     else:
         raise HTTPException(status_code=400, detail="Invalid term value.")

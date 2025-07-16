@@ -13,6 +13,7 @@ class StudentClassAssignment(Base):
     Id = Column(Integer, primary_key=True, index=True, autoincrement=True)
 
     Student_ID = Column(Integer, nullable=False)
+    ASUrite = Column(String, nullable=True)
     Position = Column(String, nullable=False)
     WeeklyHours = Column(Integer, nullable=False)
     FultonFellow = Column(String, nullable=False)
@@ -26,6 +27,7 @@ class StudentClassAssignment(Base):
 
     InstructorFirstName = Column(String, nullable=False)
     InstructorLastName = Column(String, nullable=False)
+    InstructorID = Column(Integer, nullable=True)
 
     Compensation = Column(Float, nullable=False)
     CreatedAt = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -39,7 +41,6 @@ class StudentClassAssignment(Base):
     Last_Name = Column(String, nullable=True)
     Position_Number = Column(String, nullable=True)
 
-    I9_Sent = Column(Boolean, nullable=True)
     SSN_Sent = Column(Boolean, nullable=True)
     Offer_Sent = Column(Boolean, nullable=True)
     Offer_Signed = Column(Boolean, nullable=True)

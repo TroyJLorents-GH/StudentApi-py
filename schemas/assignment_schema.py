@@ -1,8 +1,10 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime, timezone
 
 class StudentClassAssignmentCreate(BaseModel):
     Student_ID: int
+    ASUrite: str
     Position: str
     Email: str
     First_Name: Optional[str] = None
@@ -24,3 +26,4 @@ class StudentClassAssignmentCreate(BaseModel):
     CostCenterKey: str
     cur_gpa: Optional[float] = None
     cum_gpa: Optional[float] = None
+    CreatedAt: Optional[datetime] = None

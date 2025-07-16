@@ -2,18 +2,19 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime, timezone
-from fastapi.responses import StreamingResponse
 import csv
 import io
+from fastapi.responses import StreamingResponse
+
 
 from models.assignment import StudentClassAssignment
 from schemas.assignment_dto import StudentAssignmentUpdateDto
 from database import get_db
-from utils.assignment_utils import calculate_compensation, compute_cost_center_key
+from utils.assignment_utils import calculate_compensation, compute_cost_center_key, infer_acad_career
 from schemas.assignment_schema import StudentClassAssignmentCreate
 from schemas.assignment import StudentClassAssignmentRead
-from fastapi.encoders import jsonable_encoder
 from models.student import StudentLookup
+from fastapi.encoders import jsonable_encoder
 
 
 router = APIRouter(prefix="/api/StudentClassAssignment", tags=["StudentClassAssignment"])
@@ -28,27 +29,18 @@ def get_assignments(db: Session = Depends(get_db)):
 @router.get("/template")
 def download_template():
     headers = [
-        "Position", "FultonFellow", "WeeklyHours", "Student_ID", "First_Name",
+        "Position", "FultonFellow", "WeeklyHours", "Student_ID (ID number OR ASUrite accepted)", "First_Name",
         "Last_Name", "Email", "EducationLevel", "Subject", "CatalogNum",
-        "InstructorFirstName", "InstructorLastName", "ClassSession", "ClassNum",
-        "Term", "Location", "Campus", "AcadCareer"
+        "InstructorFirstName", "InstructorLastName", "InstructorID", "ClassSession", "ClassNum",
+        "Location", "Campus"
     ]
-    example_row = [
-        "IA/TA/Grader", "Yes/No", "5/10/15/20", "10 digit Id", "Name",
-        "Last Name", "email@xxx.edu", "MS/PHD", "CSE/CIS/IEE", "100-700",
-        "First Name", "Last Name", "A/B/C", "12345", "2254",
-        "TEMPE", "TEMPE", "UGRD/GRAD"
-    ]
-
-    csv_content = ",".join(headers) + "\n" + ",".join(example_row) + "\n"
-    # Use StreamingResponse to return a downloadable file
+    csv_content = ",".join(headers) + "\n"
     return StreamingResponse(
         iter([csv_content]),
         media_type="text/csv",
-        headers={
-            "Content-Disposition": "attachment; filename=BulkUploadTemplate.csv"
-        }
+        headers={"Content-Disposition": "attachment; filename=BulkUploadTemplate.csv"}
     )
+
 
 # GET by ID
 @router.get("/{assignment_id}", response_model=dict)
@@ -56,7 +48,13 @@ def get_assignment(assignment_id: int, db: Session = Depends(get_db)):
     assignment = db.query(StudentClassAssignment).filter_by(Id=assignment_id).first()
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
-    return assignment
+    return {
+        "Id": assignment.Id,
+        "Position_Number": assignment.Position_Number,
+        "SSN_Sent": assignment.SSN_Sent,
+        "Offer_Sent": assignment.Offer_Sent,
+        "Offer_Signed": assignment.Offer_Signed,
+    }
 
 
 # GET total hours by student
@@ -100,7 +98,6 @@ def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_d
         raise HTTPException(status_code=400, detail="Invalid file type. CSV required.")
 
     try:
-        # Read file content as text
         content = file.file.read().decode("utf-8")
         csv_reader = csv.DictReader(io.StringIO(content))
     except Exception:
@@ -110,38 +107,103 @@ def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_d
     now = datetime.now(timezone.utc)
 
     for row in csv_reader:
-        if not isinstance(row, dict):
-            raise HTTPException(status_code=400, detail="CSV row is not a dictionary.")
+        input_id = (row.get("Student_ID (ID number OR ASUrite accepted)") or "").strip()
 
+        # Determine if input is numeric (Student_ID) or ASUrite
+        student = None
+        if input_id.isdigit():
+            student = db.query(StudentLookup).filter(StudentLookup.Student_ID == int(input_id)).first()
+        elif input_id:
+            student = db.query(StudentLookup).filter(StudentLookup.ASUrite.ilike(input_id)).first()
+
+        if not student:
+            raise HTTPException(status_code=422, detail=f"No student found for: {input_id}")
+
+        # Always set both fields explicitly, so row matches your DB model
+        row["Student_ID"] = student.Student_ID
+        row["ASUrite"] = student.ASUrite
+
+        # Rest of your field mapping/logic (keep these as you have them!)
         row["CreatedAt"] = now
-        row["Term"] = "2254"
+        row["Term"] = "2257"
 
         try:
             row["WeeklyHours"] = int(row.get("WeeklyHours", 0))
         except ValueError:
             raise HTTPException(status_code=422, detail=f"Invalid WeeklyHours value: {row.get('WeeklyHours')}")
 
-        row["Compensation"] = calculate_compensation(row)
+        row["AcadCareer"] = infer_acad_career(row)
         row["CostCenterKey"] = compute_cost_center_key(row)
+        row["Compensation"] = calculate_compensation(row)
 
-        if row.get("FultonFellow") == "Yes":
-            student_id = row.get("Student_ID")
-            student = db.query(StudentLookup).filter(StudentLookup.Student_ID == student_id).first()
-            if student:
-                row["cur_gpa"] = student.Current_GPA
-                row["cum_gpa"] = student.Cumulative_GPA
+        if str(row.get("FultonFellow", "")).strip().lower() == "yes":
+            row["cur_gpa"] = student.Current_GPA
+            row["cum_gpa"] = student.Cumulative_GPA
+        else:
+            row["cur_gpa"] = None
+            row["cum_gpa"] = None
 
-        # Create SQLAlchemy obj
+        # Only include columns that exist in your model
+        allowed_fields = {c.name for c in StudentClassAssignment.__table__.columns}
+        clean_row = {k: v for k, v in row.items() if k in allowed_fields}
+
         try:
-            record = StudentClassAssignment(**row)
+            record = StudentClassAssignment(**clean_row)
             records.append(record)
         except TypeError as e:
             raise HTTPException(status_code=422, detail=f"Error creating assignment object: {e}")
 
     db.bulk_save_objects(records)
     db.commit()
-
     return {"message": f"{len(records)} records uploaded successfully."}
 
 
 
+
+
+# NEW: Get assignment summary for a student (by Student_ID or ASUrite)
+@router.get("/student-summary/{identifier}")
+def get_assignment_summary(identifier: str, db: Session = Depends(get_db)):
+    # Lookup student by Student_ID or ASUrite
+    if identifier.isdigit():
+        student = db.query(StudentLookup).filter(StudentLookup.Student_ID == int(identifier)).first()
+    else:
+        student = db.query(StudentLookup).filter(StudentLookup.ASUrite.ilike(identifier)).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # Get all assignments for this student
+    assignments = db.query(StudentClassAssignment).filter(
+        StudentClassAssignment.Student_ID == student.Student_ID
+    ).all()
+
+    # Tally hours by session
+    session_hours = {"A": 0, "B": 0, "C": 0}
+    assignment_list = []
+    for a in assignments:
+        session = (a.ClassSession or "").strip().upper()
+        if session in session_hours:
+            session_hours[session] += a.WeeklyHours
+        assignment_list.append({
+            "Position": a.Position,
+            "WeeklyHours": a.WeeklyHours,
+            "ClassSession": a.ClassSession,
+            "Subject": a.Subject,
+            "CatalogNum": a.CatalogNum,
+            "ClassNum": a.ClassNum,
+            "InstructorName": f"{a.InstructorFirstName} {a.InstructorLastName}"
+        })
+
+    # Compose response
+    return {
+        "StudentName": f"{student.First_Name or ''} {student.Last_Name or ''}".strip(),
+        "ASUrite": student.ASUrite,
+        "Student_ID": student.Student_ID,
+        "Position": assignments[0].Position if assignments else None,
+        "FultonFellow": assignments[0].FultonFellow if assignments else None,
+        "EducationLevel": assignments[0].EducationLevel if assignments else None,
+        "sessionA": session_hours["A"],
+        "sessionB": session_hours["B"],
+        "sessionC": session_hours["C"],
+        "assignments": assignment_list
+    }

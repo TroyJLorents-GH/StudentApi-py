@@ -1,5 +1,6 @@
-from sqlalchemy import Column, String, Integer
+from sqlalchemy import Column, String, Integer, Date
 from database import Base
+
 
 
 class ClassSchedule2254(Base):
@@ -20,3 +21,11 @@ class ClassSchedule2254(Base):
     Location = Column(String, nullable=False)
     Campus = Column(String, nullable=False)
     AcadCareer = Column(String, nullable=False)
+
+    # --- Newly added fields ---
+    # CombineSectionID = Column(String(50), nullable=False)
+    # Component = Column(String(50), nullable=False)
+    # EndDate = Column(Date, nullable=True)
+    # EnrollCap = Column(Integer, nullable=False)
+    # EnrollTotal = Column(Integer, nullable=False)
+    # InstructMode = Column(String(50), nullable=False)

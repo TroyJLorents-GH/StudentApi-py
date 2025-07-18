@@ -28,6 +28,7 @@ class StudentClassAssignment(Base):
     InstructorFirstName = Column(String, nullable=False)
     InstructorLastName = Column(String, nullable=False)
     InstructorID = Column(Integer, nullable=True)
+    Instructor_Edit = Column(String(1), nullable=True)
 
     Compensation = Column(Float, nullable=False)
     CreatedAt = Column(DateTime, default=lambda: datetime.now(timezone.utc))

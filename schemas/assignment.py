@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from typing import Optional
+
 from datetime import datetime, timezone
+
 
 class StudentClassAssignmentRead(BaseModel):
     Id: int
@@ -24,6 +26,7 @@ class StudentClassAssignmentRead(BaseModel):
     AcadCareer: str
     CostCenterKey: str
     CreatedAt: Optional[datetime] = None
+    Instructor_Edit: Optional[str] = None
 
     First_Name: Optional[str] = None
     Last_Name: Optional[str] = None
@@ -33,6 +36,7 @@ class StudentClassAssignmentRead(BaseModel):
     Offer_Signed: Optional[bool] = None
     cum_gpa: Optional[float] = None
     cur_gpa: Optional[float] = None
+
 
     class Config:
         from_attributes = True

@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from typing import Optional
+
 from datetime import datetime, timezone
+
 
 class StudentClassAssignmentCreate(BaseModel):
     Student_ID: int
@@ -17,6 +19,7 @@ class StudentClassAssignmentCreate(BaseModel):
     Term: str
     InstructorFirstName: str
     InstructorLastName: str
+    InstructorID: int
     WeeklyHours: int
     FultonFellow: str
     Compensation: float

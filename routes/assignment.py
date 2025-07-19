@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import csv
 import io
 from fastapi.responses import StreamingResponse
-
+import logging
 
 from models.assignment import StudentClassAssignment
 from models.class_schedule import ClassSchedule2254
@@ -20,13 +20,6 @@ from fastapi.encoders import jsonable_encoder
 
 router = APIRouter(prefix="/api/StudentClassAssignment", tags=["StudentClassAssignment"])
 
-
-# GET all
-@router.get("/", response_model=List[StudentClassAssignmentRead])
-def get_assignments(db: Session = Depends(get_db)):
-    return db.query(StudentClassAssignment).filter(StudentClassAssignment.Instructor_Edit.is_(None)).all()
-
-
 @router.get("/template")
 def download_template():
     headers = [
@@ -38,6 +31,11 @@ def download_template():
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=BulkUploadTemplate.csv"}
     )
+
+# GET all
+@router.get("/", response_model=List[StudentClassAssignmentRead])
+def get_assignments(db: Session = Depends(get_db)):
+    return db.query(StudentClassAssignment).filter(StudentClassAssignment.Instructor_Edit.is_(None)).all()
 
 
 # GET by ID
@@ -89,73 +87,6 @@ def update_assignment(assignment_id: int, update_data: StudentAssignmentUpdateDt
     return
 
 
-# POST bulk upload from CSV
-# @router.post("/upload")
-# def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_db)):
-#     if not file.filename.endswith(".csv"):
-#         raise HTTPException(status_code=400, detail="Invalid file type. CSV required.")
-#
-#     try:
-#         content = file.file.read().decode("utf-8")
-#         csv_reader = csv.DictReader(io.StringIO(content))
-#     except Exception:
-#         raise HTTPException(status_code=400, detail="Failed to read CSV file.")
-#
-#     records = []
-#     now = datetime.now(timezone.utc)
-#
-#     for row in csv_reader:
-#         input_id = (row.get("Student_ID (ID number OR ASUrite accepted)") or "").strip()
-#
-#         # Determine if input is numeric (Student_ID) or ASUrite
-#         student = None
-#         if input_id.isdigit():
-#             student = db.query(StudentLookup).filter(StudentLookup.Student_ID == int(input_id)).first()
-#         elif input_id:
-#             student = db.query(StudentLookup).filter(StudentLookup.ASUrite.ilike(input_id)).first()
-#
-#         if not student:
-#             raise HTTPException(status_code=422, detail=f"No student found for: {input_id}")
-#
-#         # Always set both fields explicitly, so row matches your DB model
-#         row["Student_ID"] = student.Student_ID
-#         row["ASUrite"] = student.ASUrite
-#
-#         # Rest of your field mapping/logic (keep these as you have them!)
-#         row["CreatedAt"] = now
-#         row["Term"] = "2257"
-#
-#         try:
-#             row["WeeklyHours"] = int(row.get("WeeklyHours", 0))
-#         except ValueError:
-#             raise HTTPException(status_code=422, detail=f"Invalid WeeklyHours value: {row.get('WeeklyHours')}")
-#
-#         row["AcadCareer"] = infer_acad_career(row)
-#         row["CostCenterKey"] = compute_cost_center_key(row)
-#         row["Compensation"] = calculate_compensation(row)
-#
-#         if str(row.get("FultonFellow", "")).strip().lower() == "yes":
-#             row["cur_gpa"] = student.Current_GPA
-#             row["cum_gpa"] = student.Cumulative_GPA
-#         else:
-#             row["cur_gpa"] = None
-#             row["cum_gpa"] = None
-#
-#         # Only include columns that exist in your model
-#         allowed_fields = {c.name for c in StudentClassAssignment.__table__.columns}
-#         clean_row = {k: v for k, v in row.items() if k in allowed_fields}
-#
-#         try:
-#             record = StudentClassAssignment(**clean_row)
-#             records.append(record)
-#         except TypeError as e:
-#             raise HTTPException(status_code=422, detail=f"Error creating assignment object: {e}")
-#
-#     db.bulk_save_objects(records)
-#     db.commit()
-#     return {"message": f"{len(records)} records uploaded successfully."}
-
-
 @router.post("/upload")
 def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_db)):
     if not file.filename.endswith((".csv", ".xlsx")):
@@ -172,6 +103,7 @@ def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_d
     required_fields = ["Position", "WeeklyHours", "Student_ID (ID number OR ASUrite accepted)", "ClassNum"]
 
     for idx, row in enumerate(csv_reader, start=2):
+        print(f"Row {idx}: {row}")
         # --- Validate required fields (except FultonFellow, which is optional) ---
         for field in required_fields:
             if field not in row or not str(row[field]).strip():
@@ -247,6 +179,8 @@ def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_d
         )
         records.append(assignment)
 
+
+    logging.info(f"Row {idx}: {row}")
     db.bulk_save_objects(records)
     db.commit()
     return {"message": f"{len(records)} assignments uploaded successfully."}

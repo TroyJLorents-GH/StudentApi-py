@@ -4,8 +4,7 @@ from typing import List
 from datetime import datetime, timezone
 import csv
 import io
-from fastapi.responses import StreamingResponse
-import logging
+from fastapi.responses import StreamingResponse, JSONResponse
 
 from models.assignment import StudentClassAssignment
 from models.class_schedule import ClassSchedule2254
@@ -15,11 +14,18 @@ from utils.assignment_utils import calculate_compensation, compute_cost_center_k
 from schemas.assignment_schema import StudentClassAssignmentCreate
 from schemas.assignment import StudentClassAssignmentRead
 from models.student import StudentLookup
-from fastapi.encoders import jsonable_encoder
-
 
 router = APIRouter(prefix="/api/StudentClassAssignment", tags=["StudentClassAssignment"])
 
+# --- Utility: Get changed fields (for bulk edit)
+def get_changed_fields(new_assign, orig, editable_fields):
+    changed = []
+    for field in editable_fields:
+        if getattr(new_assign, field) != getattr(orig, field):
+            changed.append(field)
+    return changed
+
+# --- Download template
 @router.get("/template")
 def download_template():
     headers = [
@@ -32,67 +38,71 @@ def download_template():
         headers={"Content-Disposition": "attachment; filename=BulkUploadTemplate.csv"}
     )
 
-# GET all
-@router.get("/", response_model=List[StudentClassAssignmentRead])
-def get_assignments(db: Session = Depends(get_db)):
-    return db.query(StudentClassAssignment).filter(StudentClassAssignment.Instructor_Edit.is_(None)).all()
+# --- Calibrate Preview (MUST be above /{assignment_id})
+@router.post("/calibrate-preview")
+async def calibrate_preview(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    try:
+        content = await file.read()
+        decoded = content.decode("utf-8-sig")
+        csv_reader = csv.DictReader(io.StringIO(decoded))
+    except Exception as e:
+        raise HTTPException(400, f"Failed to read CSV: {e}")
 
+    required_fields = ["Position", "WeeklyHours", "Student_ID (ID number OR ASUrite accepted)", "ClassNum"]
+    preview_data = []
 
-# GET by ID
-@router.get("/{assignment_id}", response_model=dict)
-def get_assignment(assignment_id: int, db: Session = Depends(get_db)):
-    assignment = db.query(StudentClassAssignment).filter_by(Id=assignment_id).first()
-    if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
-    return {
-        "Id": assignment.Id,
-        "Position_Number": assignment.Position_Number,
-        "SSN_Sent": assignment.SSN_Sent,
-        "Offer_Sent": assignment.Offer_Sent,
-        "Offer_Signed": assignment.Offer_Signed,
-    }
+    for idx, row in enumerate(csv_reader, start=2):
+        for field in required_fields:
+            if field not in row or not str(row[field]).strip():
+                raise HTTPException(422, f"Missing field '{field}' in row {idx}")
 
+        fulton = str(row.get("FultonFellow", "")).strip()
+        row["FultonFellow"] = fulton if fulton else "No"
 
-# GET total hours by student
-@router.get("/totalhours/{student_id}", response_model=int)
-def get_total_hours(student_id: int, db: Session = Depends(get_db)):
-    total = db.query(StudentClassAssignment).filter_by(Student_ID=student_id).with_entities(
-        StudentClassAssignment.WeeklyHours
-    ).all()
+        sid = row["Student_ID (ID number OR ASUrite accepted)"].strip()
+        student = db.query(StudentLookup).filter_by(Student_ID=int(sid)).first() if sid.isdigit() \
+            else db.query(StudentLookup).filter(StudentLookup.ASUrite.ilike(sid)).first()
+        if not student:
+            raise HTTPException(422, f"Student not found for '{sid}' (row {idx})")
 
-    return sum([a[0] for a in total])
+        classnum = row["ClassNum"].strip()
+        class_obj = db.query(ClassSchedule2254).filter_by(ClassNum=classnum).first()
+        if not class_obj:
+            raise HTTPException(422, f"ClassNum not found: '{classnum}' (row {idx})")
 
+        preview_row = {
+            "Position": row["Position"],
+            "FultonFellow": row["FultonFellow"],
+            "WeeklyHours": row["WeeklyHours"],
+            "Student_ID": student.Student_ID,
+            "ASUrite": student.ASUrite,
+            "ClassNum": class_obj.ClassNum,
+            "First_Name": student.First_Name,
+            "Last_Name": student.Last_Name,
+            "ASU_Email_Adress": student.ASU_Email_Adress,
+            "Degree": student.Degree,
+            "cum_gpa": float(student.Cumulative_GPA or 0),
+            "cur_gpa": float(student.Current_GPA or 0),
+            "Subject": class_obj.Subject,
+            "CatalogNum": class_obj.CatalogNum,
+            "Session": class_obj.Session,
+            "InstructorID": class_obj.InstructorID,
+            "InstructorFirstName": class_obj.InstructorFirstName,
+            "InstructorLastName": class_obj.InstructorLastName,
+        }
+        preview_data.append(preview_row)
 
-# POST single assignment
-@router.post("/", status_code=201)
-def create_assignment(assignment: StudentClassAssignmentCreate, db: Session = Depends(get_db)):
-    new_assignment = StudentClassAssignment(**assignment.model_dump())
-    db.add(new_assignment)
-    db.commit()
-    db.refresh(new_assignment)
-    return {"message": "Assignment created", "id": new_assignment.Id}
+    return JSONResponse(content=preview_data)
 
-
-# PUT update assignment
-@router.put("/{assignment_id}", status_code=204)
-def update_assignment(assignment_id: int, update_data: StudentAssignmentUpdateDto, db: Session = Depends(get_db)):
-    assignment = db.query(StudentClassAssignment).filter_by(Id=assignment_id).first()
-    if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
-
-    for field, value in update_data.model_dump(exclude_unset=True).items():
-        setattr(assignment, field, value)
-
-    db.commit()
-    return
-
-
+# --- Upload Assignments
 @router.post("/upload")
 def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_db)):
     if not file.filename.endswith((".csv", ".xlsx")):
         raise HTTPException(status_code=400, detail="CSV or XLSX required.")
     try:
-        # Read CSV (Excel not handled in this backend example, but could be added)
         content = file.file.read().decode("utf-8-sig")
         csv_reader = csv.DictReader(io.StringIO(content))
     except Exception as e:
@@ -103,33 +113,25 @@ def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_d
     required_fields = ["Position", "WeeklyHours", "Student_ID (ID number OR ASUrite accepted)", "ClassNum"]
 
     for idx, row in enumerate(csv_reader, start=2):
-        print(f"Row {idx}: {row}")
-        # --- Validate required fields (except FultonFellow, which is optional) ---
         for field in required_fields:
             if field not in row or not str(row[field]).strip():
                 raise HTTPException(422, f"Missing field '{field}' in row {idx}")
 
-        # --- Set FultonFellow to 'No' if it's blank or empty or missing ---
         fulton = str(row.get("FultonFellow", "")).strip()
         row["FultonFellow"] = fulton if fulton else "No"
 
-        # --- Student Lookup ---
         student_id_or_asurite = row["Student_ID (ID number OR ASUrite accepted)"].strip()
-        student = None
-        if student_id_or_asurite.isdigit():
-            student = db.query(StudentLookup).filter(StudentLookup.Student_ID == int(student_id_or_asurite)).first()
-        else:
-            student = db.query(StudentLookup).filter(StudentLookup.ASUrite.ilike(student_id_or_asurite)).first()
+        student = db.query(StudentLookup).filter_by(Student_ID=int(student_id_or_asurite)).first() \
+            if student_id_or_asurite.isdigit() \
+            else db.query(StudentLookup).filter(StudentLookup.ASUrite.ilike(student_id_or_asurite)).first()
         if not student:
             raise HTTPException(422, f"Student '{student_id_or_asurite}' not found (row {idx})")
 
-        # --- Class Lookup ---
         class_num = row["ClassNum"].strip()
         class_obj = db.query(ClassSchedule2254).filter_by(ClassNum=class_num).first()
         if not class_obj:
             raise HTTPException(422, f"ClassNum '{class_num}' not found (row {idx})")
 
-        # --- Compose calculated fields ---
         weekly_hours = int(row["WeeklyHours"])
         position = row["Position"]
         fulton_fellow = row["FultonFellow"]
@@ -149,7 +151,6 @@ def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_d
             "AcadCareer": class_obj.AcadCareer
         })
 
-        # --- Compose assignment object ---
         assignment = StudentClassAssignment(
             Student_ID=student.Student_ID,
             ASUrite=student.ASUrite,
@@ -179,17 +180,26 @@ def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_d
         )
         records.append(assignment)
 
-
-    logging.info(f"Row {idx}: {row}")
     db.bulk_save_objects(records)
     db.commit()
     return {"message": f"{len(records)} assignments uploaded successfully."}
 
+# --- Get All
+@router.get("/", response_model=List[StudentClassAssignmentRead])
+def get_assignments(db: Session = Depends(get_db)):
+    return db.query(StudentClassAssignment).filter(StudentClassAssignment.Instructor_Edit.is_(None)).all()
 
-# NEW: Get assignment summary for a student (by Student_ID or ASUrite)
+# --- Get total hours by student
+@router.get("/totalhours/{student_id}", response_model=int)
+def get_total_hours(student_id: int, db: Session = Depends(get_db)):
+    total = db.query(StudentClassAssignment).filter_by(Student_ID=student_id).with_entities(
+        StudentClassAssignment.WeeklyHours
+    ).all()
+    return sum([a[0] for a in total])
+
+# --- Get student summary
 @router.get("/student-summary/{identifier}")
 def get_assignment_summary(identifier: str, db: Session = Depends(get_db)):
-    # Lookup student by Student_ID or ASUrite
     if identifier.isdigit():
         student = db.query(StudentLookup).filter(StudentLookup.Student_ID == int(identifier)).first()
     else:
@@ -197,13 +207,11 @@ def get_assignment_summary(identifier: str, db: Session = Depends(get_db)):
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    # Get all assignments for this student
     assignments = db.query(StudentClassAssignment).filter(
         StudentClassAssignment.Student_ID == student.Student_ID,
         StudentClassAssignment.Instructor_Edit.is_(None)
     ).all()
 
-    # Tally hours by session
     session_hours = {"A": 0, "B": 0, "C": 0}
     assignment_list = []
     for a in assignments:
@@ -222,7 +230,6 @@ def get_assignment_summary(identifier: str, db: Session = Depends(get_db)):
             "AcadCareer": a.AcadCareer,
         })
 
-    # Compose response
     return {
         "StudentName": f"{student.First_Name or ''} {student.Last_Name or ''}".strip(),
         "ASUrite": student.ASUrite,
@@ -236,27 +243,16 @@ def get_assignment_summary(identifier: str, db: Session = Depends(get_db)):
         "assignments": assignment_list
     }
 
-
-
-
+# --- Bulk Edit
 @router.post("/bulk-edit")
 def bulk_edit_assignments(
     updates: dict,
     db: Session = Depends(get_db)
 ):
-    """
-    Request body format:
-    {
-        "updates": [{ "id": 123, "Position": ..., "WeeklyHours": ..., "ClassNum": ...}, ...],
-        "deletes": [456, 789],
-        "studentId": "ASUrite or Student_ID"
-    }
-    """
     student_id = updates.get("studentId")
     update_rows = updates.get("updates", [])
     delete_ids = updates.get("deletes", [])
 
-    # Find student
     if not student_id:
         raise HTTPException(400, "No studentId provided")
     if str(student_id).isdigit():
@@ -266,25 +262,24 @@ def bulk_edit_assignments(
     if not student:
         raise HTTPException(404, "Student not found")
 
-    # 1. Handle updates/edits
+    updated_response = []
+    editable_fields = ["Position", "WeeklyHours", "ClassNum"]
+
     for edit in update_rows:
         orig_id = edit["id"]
         orig = db.query(StudentClassAssignment).filter_by(Id=orig_id).first()
         if not orig:
             continue
-        # Mark original as edited
         orig.Instructor_Edit = "Y"
         db.add(orig)
         db.flush()
 
         class_obj = None
         if "ClassNum" in edit and edit["ClassNum"] != orig.ClassNum:
-            from models.class_schedule import ClassSchedule2254
             class_obj = db.query(ClassSchedule2254).filter_by(ClassNum=edit["ClassNum"], Term=orig.Term).first()
             if not class_obj:
                 raise HTTPException(404, f"ClassNum {edit['ClassNum']} not found")
 
-        # Always recalculate compensation & cost center based on new info
         comp = calculate_compensation({
             "WeeklyHours": edit["WeeklyHours"],
             "Position": edit["Position"],
@@ -323,7 +318,7 @@ def bulk_edit_assignments(
             cur_gpa=orig.cur_gpa,
             cum_gpa=orig.cum_gpa,
             CreatedAt=datetime.now(timezone.utc),
-            Instructor_Edit=None,  # Not edited yet
+            Instructor_Edit=None,
             First_Name=orig.First_Name,
             Last_Name=orig.Last_Name,
             Position_Number=orig.Position_Number,
@@ -332,11 +327,48 @@ def bulk_edit_assignments(
             Offer_Signed=orig.Offer_Signed
         )
         db.add(new_assign)
-    # 2. Handle deletions
+        db.flush()
+
+        changed_fields = get_changed_fields(new_assign, orig, editable_fields)
+        row_dict = {col.name: getattr(new_assign, col.name) for col in StudentClassAssignment.__table__.columns}
+        row_dict['changed_fields'] = changed_fields
+        updated_response.append(row_dict)
+
     for del_id in delete_ids:
         orig = db.query(StudentClassAssignment).filter_by(Id=del_id).first()
         if orig:
             orig.Instructor_Edit = "D"
             db.add(orig)
     db.commit()
-    return {"status": "success"}
+    return {
+        "updated": updated_response,
+        "deleted": delete_ids,
+        "status": "success"
+    }
+
+# --- PUT update assignment (single)
+@router.put("/{assignment_id}", status_code=204)
+def update_assignment(assignment_id: int, update_data: StudentAssignmentUpdateDto, db: Session = Depends(get_db)):
+    assignment = db.query(StudentClassAssignment).filter_by(Id=assignment_id).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+
+    for field, value in update_data.model_dump(exclude_unset=True).items():
+        setattr(assignment, field, value)
+
+    db.commit()
+    return
+
+# --- GET by Assignment ID (MUST BE LAST!)
+@router.get("/{assignment_id}", response_model=dict)
+def get_assignment(assignment_id: int, db: Session = Depends(get_db)):
+    assignment = db.query(StudentClassAssignment).filter_by(Id=assignment_id).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    return {
+        "Id": assignment.Id,
+        "Position_Number": assignment.Position_Number,
+        "SSN_Sent": assignment.SSN_Sent,
+        "Offer_Sent": assignment.Offer_Sent,
+        "Offer_Signed": assignment.Offer_Signed,
+    }

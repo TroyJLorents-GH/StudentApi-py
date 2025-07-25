@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from database import engine, Base
-from routes import student, assignment, class_schedule, application
+from routes import student, assignment, class_schedule, application, manage_assignments
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -28,6 +28,7 @@ app.include_router(student.router)
 app.include_router(assignment.router)
 app.include_router(class_schedule.router)
 app.include_router(application.router)
+app.include_router(manage_assignments.router)
 
 @app.get("/")
 def read_root():

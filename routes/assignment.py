@@ -14,6 +14,7 @@ from utils.assignment_utils import calculate_compensation, compute_cost_center_k
 from schemas.assignment_schema import StudentClassAssignmentCreate
 from schemas.assignment import StudentClassAssignmentRead
 from models.student import StudentLookup
+from sqlalchemy import or_
 
 router = APIRouter(prefix="/api/StudentClassAssignment", tags=["StudentClassAssignment"])
 
@@ -92,6 +93,8 @@ async def calibrate_preview(
             "InstructorID": class_obj.InstructorID,
             "InstructorFirstName": class_obj.InstructorFirstName,
             "InstructorLastName": class_obj.InstructorLastName,
+            "Title": class_obj.Title,
+            "SectionNum": class_obj.SectionNum,
         }
         preview_data.append(preview_row)
 
@@ -192,10 +195,29 @@ def get_assignments(db: Session = Depends(get_db)):
 # --- Get total hours by student
 @router.get("/totalhours/{student_id}", response_model=int)
 def get_total_hours(student_id: int, db: Session = Depends(get_db)):
-    total = db.query(StudentClassAssignment).filter_by(Student_ID=student_id).with_entities(
+    total = db.query(StudentClassAssignment).filter(
+        StudentClassAssignment.Student_ID == student_id,
+        or_(
+            StudentClassAssignment.Instructor_Edit == None,
+            StudentClassAssignment.Instructor_Edit == '',
+            StudentClassAssignment.Instructor_Edit == 'N'  # if you use this as a default for active
+        )
+    ).with_entities(
         StudentClassAssignment.WeeklyHours
     ).all()
+
     return sum([a[0] for a in total])
+
+# POST single assignment
+@router.post("/", status_code=201)
+def create_assignment(assignment: StudentClassAssignmentCreate, db: Session = Depends(get_db)):
+    new_assignment = StudentClassAssignment(**assignment.model_dump())
+    db.add(new_assignment)
+    db.commit()
+    db.refresh(new_assignment)
+    return {"message": "Assignment created", "id": new_assignment.Id}
+
+
 
 # --- Get student summary
 @router.get("/student-summary/{identifier}")

@@ -5,6 +5,7 @@ from database import get_db
 from models.application import MastersIAGraderApplication2254
 from schemas.application_summary import ApplicationSummaryDto
 
+
 router = APIRouter(prefix="/api/MastersIAGraderApplication", tags=["MastersIAGraderApplication"])
 
 @router.get("/", response_model=List[ApplicationSummaryDto])

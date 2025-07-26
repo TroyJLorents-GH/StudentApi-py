@@ -9,7 +9,8 @@ app = FastAPI()
 # CORS (if you're calling from localhost:3000 or any frontend)
 origins = [
     "http://localhost:3000",
-    "http://127.0.0.1:3000"
+    "http://127.0.0.1:3000",
+    "https://blue-moss-0cf2b2f10.1.azurestaticapps.net"
 ]
 
 app.add_middleware(
@@ -21,7 +22,7 @@ app.add_middleware(
 )
 
 # Create all tables in the database (can be disabled in production)
-# Base.metadata.create_all(bind=engine)
+#Base.metadata.create_all(bind=engine)
 
 # Register API routers
 app.include_router(student.router)

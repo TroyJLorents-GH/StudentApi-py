@@ -34,3 +34,17 @@ app.include_router(manage_assignments.router)
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the Python API backend"}
+
+
+# --- Debug/health endpoints ---
+@app.get("/healthz")
+def healthz():
+    return {"ok": True}
+
+DEBUG = os.getenv("DEBUG_ROUTES", "false").lower() == "true"
+
+if DEBUG:
+    @app.get("/routes")
+    def routes():
+        # Minimal info: just the paths
+        return [{"path": r.path} for r in app.router.routes]

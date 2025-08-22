@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from database import engine, Base
 from routes import student, assignment, class_schedule, application, manage_assignments
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 app = FastAPI()
 

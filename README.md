@@ -1,4 +1,4 @@
-[BulkUploadTemplate.csv](https://github.com/user-attachments/files/21958763/BulkUploadTemplate.csv)# Student Hiring System API (Python FastAPI)
+# Student Hiring System API (Python FastAPI)
 
 ![Azure](https://img.shields.io/badge/hosted%20on-Azure_App_Service-blue)
 ![FastAPI](https://img.shields.io/badge/framework-FastAPI-009688?logo=fastapi)

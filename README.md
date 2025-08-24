@@ -7,7 +7,7 @@
 
 ## Live API (Swagger UI)
 
-[https://studenthiringapp-d8cxb6h0e8eyevhf.westus-01.azurewebsites.net/docs](https://studenthiringapp-d8cxb6h0e8eyevhf.westus-01.azurewebsites.net/docs)
+* API Documentation: [https://studenthiringapp-d8cxb6h0e8eyevhf.westus-01.azurewebsites.net/docs](https://studenthiringapp-d8cxb6h0e8eyevhf.westus-01.azurewebsites.net/docs)
 
 * Live Site (Frontend): [https://blue-moss-0cf2b2f10.1.azurestaticapps.net/](https://blue-moss-0cf2b2f10.1.azurestaticapps.net/)
 * [Testing Data – Student Lookup Use Case](https://github.com/user-attachments/files/21176231/StudentData.pdf)
@@ -195,8 +195,3 @@ See [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
-
----
-
-Do you also want me to create a **badges section** (e.g. GitHub Actions CI badge, Python version badge, FastAPI docs badge) like we see in open source repos, so it looks more professional on GitHub?

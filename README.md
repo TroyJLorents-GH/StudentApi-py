@@ -1,4 +1,4 @@
-# Student Hiring System API (Python FastAPI)
+[BulkUploadTemplate.csv](https://github.com/user-attachments/files/21958763/BulkUploadTemplate.csv)# Student Hiring System API (Python FastAPI)
 
 ![Azure](https://img.shields.io/badge/hosted%20on-Azure_App_Service-blue)
 ![FastAPI](https://img.shields.io/badge/framework-FastAPI-009688?logo=fastapi)
@@ -10,7 +10,6 @@
 [https://studenthiringapp-d8cxb6h0e8eyevhf.westus-01.azurewebsites.net/docs](https://studenthiringapp-d8cxb6h0e8eyevhf.westus-01.azurewebsites.net/docs)
 
 * Live Site (Frontend): [https://blue-moss-0cf2b2f10.1.azurestaticapps.net/](https://blue-moss-0cf2b2f10.1.azurestaticapps.net/)
-* [Bulk Upload Template](https://raw.githubusercontent.com/TroyJLorents-GH/your-repo/main/BulkUploadTemplate.csv)
 * [Testing Data – Student Lookup Use Case](https://github.com/user-attachments/files/21176231/StudentData.pdf)
 
 

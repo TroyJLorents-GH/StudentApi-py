@@ -23,4 +23,9 @@ class ClassSchedule2254(Base):
     AcadCareer = Column(String, nullable=False)
 
     # --- Newly added fields ---
+    Component = Column(String(50), nullable=True)
+    InstructMode = Column(String(50), nullable=True)
+    EndDate = Column(Date, nullable=True)
+    EnrollCap = Column(Integer, nullable=True)
+    EnrollTotal = Column(Integer, nullable=True)
 

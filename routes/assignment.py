@@ -15,6 +15,10 @@ from schemas.assignment_schema import StudentClassAssignmentCreate
 from schemas.assignment import StudentClassAssignmentRead
 from models.student import StudentLookup
 from sqlalchemy import or_
+from dependencies import current_user
+import os
+
+ACTIVE_TERM = os.getenv("ACTIVE_TERM", "2254")
 
 router = APIRouter(prefix="/api/StudentClassAssignment", tags=["StudentClassAssignment"])
 
@@ -187,10 +191,46 @@ def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_d
     db.commit()
     return {"message": f"{len(records)} assignments uploaded successfully."}
 
-# --- Get All
+# --- Download legacy template (12-column)
+@router.get("/template-legacy")
+def download_template_legacy():
+    headers = [
+        "Position", "FultonFellow", "WeeklyHours", "Student_ID", "ASUrite",
+        "ClassNum", "Subject", "CatalogNum", "Session", "InstructorID",
+        "InstructorFirstName", "InstructorLastName"
+    ]
+    csv_content = ",".join(headers) + "\n"
+    return StreamingResponse(
+        iter([csv_content]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=BulkUploadTemplate_Legacy.csv"}
+    )
+
+# --- Get All (active, non-instructor-edited)
 @router.get("/", response_model=List[StudentClassAssignmentRead])
 def get_assignments(db: Session = Depends(get_db)):
     return db.query(StudentClassAssignment).filter(StudentClassAssignment.Instructor_Edit.is_(None)).all()
+
+# --- Admin view (all assignments including edited)
+@router.get("/admin", response_model=List[StudentClassAssignmentRead])
+def get_admin_assignments(db: Session = Depends(get_db), user: dict = Depends(current_user)):
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin only")
+    return db.query(StudentClassAssignment).filter(
+        StudentClassAssignment.Term == ACTIVE_TERM
+    ).all()
+
+# --- My uploads (filtered by ImportedBy)
+@router.get("/my-uploads", response_model=List[StudentClassAssignmentRead])
+def get_my_uploads(db: Session = Depends(get_db), user: dict = Depends(current_user)):
+    asurite = user.get("asurite")
+    if not asurite:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return db.query(StudentClassAssignment).filter(
+        StudentClassAssignment.ImportedBy == asurite,
+        StudentClassAssignment.Term == ACTIVE_TERM,
+        StudentClassAssignment.Instructor_Edit.is_(None)
+    ).all()
 
 # --- Get total hours by student
 @router.get("/totalhours/{student_id}", response_model=int)

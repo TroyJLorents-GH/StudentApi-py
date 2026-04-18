@@ -47,3 +47,6 @@ class StudentClassAssignment(Base):
     Offer_Signed = Column(Boolean, nullable=True)
     cum_gpa = Column(Float, nullable=True)
     cur_gpa = Column(Float, nullable=True)
+    ImportedBy = Column(String, nullable=True)
+    Notes = Column(String, nullable=True)
+    Status = Column(String, nullable=True)

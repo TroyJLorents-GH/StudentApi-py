@@ -27,3 +27,5 @@ class UserAccess(Base):
     program_chair_uploads = Column(Boolean, default=False, nullable=False)
     faculty_quickassign = Column(Boolean, default=False, nullable=False)
     faculty_grader_uploads = Column(Boolean, default=False, nullable=False)
+    analytics = Column(Boolean, default=False, nullable=False)
+    chat = Column(Boolean, default=False, nullable=False)

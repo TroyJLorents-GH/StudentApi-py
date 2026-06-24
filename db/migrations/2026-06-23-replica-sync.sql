@@ -37,6 +37,40 @@ IF COL_LENGTH('dbo.user_access','analytics') IS NULL
 IF COL_LENGTH('dbo.user_access','chat') IS NULL
     ALTER TABLE dbo.user_access ADD chat BIT NOT NULL CONSTRAINT DF_user_access_chat DEFAULT 0;
 
+/* ---------- Task 0.3a: Create ClassSchedule2264 if missing ----------
+   Azure has 2254 + 2261 but NOT 2264. Analytics cross-term endpoints loop all three
+   term models, so the 2264 table must exist (empty is fine) or those queries error.
+   Schema mirrors ClassSchedule2254 + the 3 analytics columns. */
+IF OBJECT_ID('dbo.ClassSchedule2264','U') IS NULL
+BEGIN
+    CREATE TABLE dbo.ClassSchedule2264 (
+        ClassNum            NVARCHAR(50) NOT NULL PRIMARY KEY,
+        Term                NVARCHAR(50) NOT NULL,
+        Session             NVARCHAR(50) NOT NULL,
+        AcadGroup           NVARCHAR(50) NOT NULL,
+        AcadOrg             NVARCHAR(50) NOT NULL,
+        Campus              NVARCHAR(50) NOT NULL,
+        Location            NVARCHAR(50) NOT NULL,
+        AcadCareer          NVARCHAR(50) NOT NULL,
+        Subject             NVARCHAR(50) NOT NULL,
+        CatalogNum          INT          NOT NULL,
+        SectionNum          INT          NOT NULL,
+        Component           NVARCHAR(50) NOT NULL,
+        Title               NVARCHAR(50) NOT NULL,
+        InstructorID        INT          NOT NULL,
+        InstructorLastName  NVARCHAR(50) NULL,
+        InstructorFirstName NVARCHAR(50) NULL,
+        InstructorEmail     NVARCHAR(50) NULL,
+        InstructMode        NVARCHAR(50) NULL,
+        EndDate             DATE         NULL,
+        EnrollCap           INT          NULL,
+        EnrollTotal         INT          NULL,
+        ClassType           NVARCHAR(5)  NULL,
+        ClassStatus         NVARCHAR(5)  NULL,
+        AssocClassNum       INT          NULL
+    );
+END
+
 /* ---------- Task 0.3: ClassSchedule term tables — analytics cols ----------
    Repeat per term table that EXISTS in this DB. Skip ones that don't exist. */
 IF OBJECT_ID('dbo.ClassSchedule2254','U') IS NOT NULL AND COL_LENGTH('dbo.ClassSchedule2254','ClassType') IS NULL

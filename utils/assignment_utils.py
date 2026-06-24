@@ -4,7 +4,7 @@ from collections import namedtuple
 # --- Compensation Calculation ---
 
 
-def calculate_compensation(a):
+def calculate_compensation(a, term=None):
     h = int(a.get("WeeklyHours", 0))
     position = (a.get("Position") or "").strip()
     level = (a.get("EducationLevel") or "").strip().upper()

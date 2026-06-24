@@ -1,4 +1,4 @@
-﻿from models.assignment import StudentClassAssignment
+from models.assignment import StudentClassAssignment
 from collections import namedtuple
 
 # --- Compensation Calculation ---

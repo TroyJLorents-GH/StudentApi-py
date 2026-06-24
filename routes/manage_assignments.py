@@ -82,7 +82,7 @@ def update_assignment(
             "EducationLevel": assignment.EducationLevel,
             "FultonFellow": assignment.FultonFellow,
             "ClassSession": assignment.ClassSession
-        })
+        }, term=assignment.Term)
 
     # Recompute CostCenterKey if any relevant fields changed
     if any(f in changed for f in costcenter_fields) or "AcadCareer" in changed:

@@ -4,24 +4,12 @@ from sqlalchemy import func, or_, not_, and_
 from typing import Optional
 
 from models.assignment import StudentClassAssignment
-from models.class_schedule import ClassSchedule2254, ClassSchedule2261, ClassSchedule2264, ACTIVE_TERM
+from models.class_schedule import ClassSchedule, ACTIVE_TERM
 from models.student import StudentLookup
 from database import get_db
 from dependencies import require_perm
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
-
-# Term-to-model mapping for per-term table strategy
-TERM_MODELS = {
-    "2254": ClassSchedule2254,
-    "2261": ClassSchedule2261,
-    "2264": ClassSchedule2264,
-}
-
-
-def _cls(term):
-    """Return the correct per-term ClassSchedule model class for the given term string."""
-    return TERM_MODELS.get(str(term or ACTIVE_TERM), ClassSchedule2264)
 
 
 # Truly-hired filter: Instructor_Edit is null/''/'N' (not edited 'Y' or deleted 'D').
@@ -33,11 +21,11 @@ def _hired_filter():
     )
 
 
-def _enroll_sections(M):
+def _enroll_sections():
     """Count enrollment only from active enrollment sections: ClassType 'E'
     (the LEC where students enroll) and ClassStatus 'A' (offered). Excludes the
     'N' components (REC/LAB) that mirror the lecture — summing them double-counts."""
-    return and_(M.ClassType == "E", M.ClassStatus == "A")
+    return and_(ClassSchedule.ClassType == "E", ClassSchedule.ClassStatus == "A")
 
 
 def _normalized(categories, series):
@@ -59,7 +47,6 @@ def get_hiring_trend(
     Cross-term hire counts for the trend chart.
     Returns { terms: [...], series: [{ key, counts: [...] }] } where counts
     align with the terms array. Top-N keys by total hires across all terms.
-    Assignment table has Term column so no per-term table issues here.
     """
     # Group by raw columns and build the display key in Python — SQL Server
     # rejects GROUP BY on CONCAT(...) with bound parameters (error 8120).
@@ -125,17 +112,16 @@ def get_enrollment_heatmap(
     Aggregation by course/subject happens client-side.
     """
     use_term = term if term else ACTIVE_TERM
-    M = _cls(use_term)
 
     rows = (
         db.query(
-            M.ClassNum.label("classNum"),
-            M.Subject.label("subject"),
-            M.CatalogNum.label("catalogNum"),
-            M.EnrollTotal.label("enrollTotal"),
-            M.EnrollCap.label("enrollCap"),
+            ClassSchedule.ClassNum.label("classNum"),
+            ClassSchedule.Subject.label("subject"),
+            ClassSchedule.CatalogNum.label("catalogNum"),
+            ClassSchedule.EnrollTotal.label("enrollTotal"),
+            ClassSchedule.EnrollCap.label("enrollCap"),
         )
-        .filter(_enroll_sections(M))
+        .filter(ClassSchedule.Term == use_term, _enroll_sections())
         .all()
     )
 
@@ -235,12 +221,11 @@ def hiring_kpis(term: Optional[str] = Query(None), db: Session = Depends(get_db)
 def enrollment_by_subject(term: Optional[str] = Query(None), db: Session = Depends(get_db),
                           user: dict = Depends(require_perm("analytics"))):
     use_term = term or ACTIVE_TERM
-    M = _cls(use_term)
     rows = (
-        db.query(M.Subject.label("subject"),
-                 func.sum(M.EnrollTotal).label("total"))
-        .filter(_enroll_sections(M))
-        .group_by(M.Subject).all()
+        db.query(ClassSchedule.Subject.label("subject"),
+                 func.sum(ClassSchedule.EnrollTotal).label("total"))
+        .filter(ClassSchedule.Term == use_term, _enroll_sections())
+        .group_by(ClassSchedule.Subject).all()
     )
     rows = sorted(rows, key=lambda r: r.subject or "")
     return _normalized([r.subject for r in rows], [("Enrollment", [r.total or 0 for r in rows])])
@@ -250,13 +235,12 @@ def enrollment_by_subject(term: Optional[str] = Query(None), db: Session = Depen
 def enrollment_fill_rate(term: Optional[str] = Query(None), db: Session = Depends(get_db),
                          user: dict = Depends(require_perm("analytics"))):
     use_term = term or ACTIVE_TERM
-    M = _cls(use_term)
     rows = (
-        db.query(M.Subject.label("subject"),
-                 func.sum(M.EnrollTotal).label("tot"),
-                 func.sum(M.EnrollCap).label("cap"))
-        .filter(_enroll_sections(M))
-        .group_by(M.Subject).all()
+        db.query(ClassSchedule.Subject.label("subject"),
+                 func.sum(ClassSchedule.EnrollTotal).label("tot"),
+                 func.sum(ClassSchedule.EnrollCap).label("cap"))
+        .filter(ClassSchedule.Term == use_term, _enroll_sections())
+        .group_by(ClassSchedule.Subject).all()
     )
     rows = sorted(rows, key=lambda r: r.subject or "")
     pct = [round(100.0 * (r.tot or 0) / r.cap, 1) if r.cap else 0 for r in rows]
@@ -267,12 +251,11 @@ def enrollment_fill_rate(term: Optional[str] = Query(None), db: Session = Depend
 def enrollment_top_instructors(term: Optional[str] = Query(None), limit: int = Query(10, ge=1, le=50),
                                db: Session = Depends(get_db), user: dict = Depends(require_perm("analytics"))):
     use_term = term or ACTIVE_TERM
-    M = _cls(use_term)
     rows = (
-        db.query(M.InstructorFirstName.label("fn"), M.InstructorLastName.label("ln"),
-                 func.sum(M.EnrollTotal).label("tot"))
-        .filter(_enroll_sections(M))
-        .group_by(M.InstructorFirstName, M.InstructorLastName).all()
+        db.query(ClassSchedule.InstructorFirstName.label("fn"), ClassSchedule.InstructorLastName.label("ln"),
+                 func.sum(ClassSchedule.EnrollTotal).label("tot"))
+        .filter(ClassSchedule.Term == use_term, _enroll_sections())
+        .group_by(ClassSchedule.InstructorFirstName, ClassSchedule.InstructorLastName).all()
     )
     ranked = sorted(rows, key=lambda r: r.tot or 0, reverse=True)[:limit]
     labels = [f"{r.fn or ''} {r.ln or ''}".strip() or "Unknown" for r in ranked]
@@ -283,11 +266,10 @@ def enrollment_top_instructors(term: Optional[str] = Query(None), limit: int = Q
 def enrollment_mode_mix(term: Optional[str] = Query(None), db: Session = Depends(get_db),
                         user: dict = Depends(require_perm("analytics"))):
     use_term = term or ACTIVE_TERM
-    M = _cls(use_term)
     rows = (
-        db.query(M.InstructMode.label("mode"), func.count().label("n"))
-        .filter(_enroll_sections(M))
-        .group_by(M.InstructMode).all()
+        db.query(ClassSchedule.InstructMode.label("mode"), func.count().label("n"))
+        .filter(ClassSchedule.Term == use_term, _enroll_sections())
+        .group_by(ClassSchedule.InstructMode).all()
     )
     rows = sorted(rows, key=lambda r: r.mode or "")
     return _normalized([r.mode or "Unknown" for r in rows], [("Sections", [r.n for r in rows])])
@@ -297,12 +279,11 @@ def enrollment_mode_mix(term: Optional[str] = Query(None), db: Session = Depends
 def enrollment_kpis(term: Optional[str] = Query(None), db: Session = Depends(get_db),
                     user: dict = Depends(require_perm("analytics"))):
     use_term = term or ACTIVE_TERM
-    M = _cls(use_term)
-    base = db.query(M).filter(_enroll_sections(M))
+    base = db.query(ClassSchedule).filter(ClassSchedule.Term == use_term, _enroll_sections())
     sections = base.count()
-    tot = db.query(func.coalesce(func.sum(M.EnrollTotal), 0)).filter(_enroll_sections(M)).scalar()
-    cap = db.query(func.coalesce(func.sum(M.EnrollCap), 0)).filter(_enroll_sections(M)).scalar()
-    instructors = db.query(M.InstructorLastName).filter(_enroll_sections(M)).distinct().count()
+    tot = db.query(func.coalesce(func.sum(ClassSchedule.EnrollTotal), 0)).filter(ClassSchedule.Term == use_term, _enroll_sections()).scalar()
+    cap = db.query(func.coalesce(func.sum(ClassSchedule.EnrollCap), 0)).filter(ClassSchedule.Term == use_term, _enroll_sections()).scalar()
+    instructors = db.query(ClassSchedule.InstructorLastName).filter(ClassSchedule.Term == use_term, _enroll_sections()).distinct().count()
     fill = round(100.0 * (tot or 0) / cap, 1) if cap else 0
     return {"enrollment": int(tot or 0), "sections": sections, "fillRate": fill, "instructors": instructors}
 
@@ -370,10 +351,9 @@ def students_kpis(term: Optional[str] = Query(None), db: Session = Depends(get_d
 def grader_ratio_by_subject(term: Optional[str] = Query(None), db: Session = Depends(get_db),
                             user: dict = Depends(require_perm("analytics"))):
     use_term = term or ACTIVE_TERM
-    M = _cls(use_term)
     enr = dict(
-        db.query(M.Subject, func.sum(M.EnrollTotal))
-        .filter(_enroll_sections(M)).group_by(M.Subject).all()
+        db.query(ClassSchedule.Subject, func.sum(ClassSchedule.EnrollTotal))
+        .filter(ClassSchedule.Term == use_term, _enroll_sections()).group_by(ClassSchedule.Subject).all()
     )
     grad = dict(
         db.query(StudentClassAssignment.Subject, func.count())
@@ -392,15 +372,14 @@ def grader_ratio_by_subject(term: Optional[str] = Query(None), db: Session = Dep
 def cost_per_enrolled(term: Optional[str] = Query(None), db: Session = Depends(get_db),
                       user: dict = Depends(require_perm("analytics"))):
     use_term = term or ACTIVE_TERM
-    M = _cls(use_term)
     comp = dict(
         db.query(StudentClassAssignment.Subject, func.sum(StudentClassAssignment.Compensation))
         .filter(_hired_filter(), StudentClassAssignment.Term == use_term)
         .group_by(StudentClassAssignment.Subject).all()
     )
     enr = dict(
-        db.query(M.Subject, func.sum(M.EnrollTotal))
-        .filter(_enroll_sections(M)).group_by(M.Subject).all()
+        db.query(ClassSchedule.Subject, func.sum(ClassSchedule.EnrollTotal))
+        .filter(ClassSchedule.Term == use_term, _enroll_sections()).group_by(ClassSchedule.Subject).all()
     )
     subjects = sorted(set(comp) & set(enr))
     data = [round((comp.get(s, 0) or 0) / e, 2) if (e := enr.get(s, 0)) else 0 for s in subjects]
@@ -437,40 +416,35 @@ def enrollment_course_by_term(metric: str = Query("enrollment", pattern="^(enrol
     EnrollTotal) or 'fillrate' (EnrollTotal/EnrollCap %). Optional filters:
     subject, career (UGRD/GRAD), CatalogNum range (cat_min/cat_max). Top-N
     courses by total enrollment. Shape feeds the heatmap (course x term).
-    Python-side union across ClassSchedule2254/2261/2264.
     """
+    q = db.query(
+        ClassSchedule.Subject.label("subject"),
+        ClassSchedule.CatalogNum.label("cat"),
+        ClassSchedule.Term.label("term"),
+        func.sum(ClassSchedule.EnrollTotal).label("tot"),
+        func.sum(ClassSchedule.EnrollCap).label("cap"),
+    ).filter(_enroll_sections())
+    if subject:
+        q = q.filter(ClassSchedule.Subject == subject)
+    if career:
+        q = q.filter(ClassSchedule.AcadCareer == career)
+    if cat_min is not None:
+        q = q.filter(ClassSchedule.CatalogNum >= cat_min)
+    if cat_max is not None:
+        q = q.filter(ClassSchedule.CatalogNum <= cat_max)
+    rows = q.group_by(ClassSchedule.Subject, ClassSchedule.CatalogNum, ClassSchedule.Term).all()
+    terms = sorted({r.term for r in rows})
     courses = {}
-    all_terms = []
-    for term_key, M in TERM_MODELS.items():
-        q = db.query(
-            M.Subject.label("subject"),
-            M.CatalogNum.label("cat"),
-            func.sum(M.EnrollTotal).label("tot"),
-            func.sum(M.EnrollCap).label("cap"),
-        ).filter(_enroll_sections(M))
-        if subject:
-            q = q.filter(M.Subject == subject)
-        if career:
-            q = q.filter(M.AcadCareer == career)
-        if cat_min is not None:
-            q = q.filter(M.CatalogNum >= cat_min)
-        if cat_max is not None:
-            q = q.filter(M.CatalogNum <= cat_max)
-        rows = q.group_by(M.Subject, M.CatalogNum).all()
-        if rows:
-            all_terms.append(term_key)
-        for r in rows:
-            courses.setdefault(f"{r.subject} {r.cat}", {})[term_key] = (r.tot or 0, r.cap or 0)
-
-    terms = sorted(all_terms)
+    for r in rows:
+        courses.setdefault(f"{r.subject} {r.cat}", {})[r.term] = (r.tot or 0, r.cap or 0)
 
     def total(c):
         return sum(t for t, _ in courses[c].values())
 
     top = sorted(courses, key=total, reverse=True)[:limit]
 
-    def val(c, t):
-        tot, cap = courses[c].get(t, (0, 0))
+    def val(c, term):
+        tot, cap = courses[c].get(term, (0, 0))
         if metric == "fillrate":
             return round(100.0 * tot / cap, 1) if cap else 0
         return tot
@@ -481,42 +455,32 @@ def enrollment_course_by_term(metric: str = Query("enrollment", pattern="^(enrol
 
 @router.get("/enrollment/subjects")
 def enrollment_subjects(db: Session = Depends(get_db), user: dict = Depends(require_perm("analytics"))):
-    """Distinct subjects for the course-report filter dropdown.
-    Python-side union across all three per-term tables."""
-    subjects = set()
-    for M in TERM_MODELS.values():
-        for (s,) in db.query(M.Subject).filter(_enroll_sections(M)).distinct():
-            if s:
-                subjects.add(s)
-    return sorted(subjects)
+    """Distinct subjects for the course-report filter dropdown."""
+    rows = db.query(ClassSchedule.Subject).distinct().all()
+    return sorted({r[0] for r in rows if r[0]})
 
 
 @router.get("/enrollment/instructors")
 def enrollment_instructors(db: Session = Depends(get_db), user: dict = Depends(require_perm("analytics"))):
-    """Instructors who teach enrollment sections — for the instructor-load dropdown.
-    Python-side union across all three per-term tables; last-seen name wins per ID."""
+    """Instructors who teach enrollment sections — for the instructor-load dropdown."""
+    rows = (db.query(ClassSchedule.InstructorID, ClassSchedule.InstructorLastName,
+                     ClassSchedule.InstructorFirstName)
+            .filter(_enroll_sections()).distinct().all())
     out = {}
-    for M in TERM_MODELS.values():
-        rows = (db.query(M.InstructorID, M.InstructorLastName, M.InstructorFirstName)
-                .filter(_enroll_sections(M)).distinct().all())
-        for iid, ln, fn in rows:
-            if iid is None:
-                continue
-            out[iid] = f"{ln or ''}, {fn or ''}".strip().strip(",").strip()
+    for iid, ln, fn in rows:
+        if iid is None:
+            continue
+        out[iid] = f"{ln or ''}, {fn or ''}".strip().strip(",").strip()
     return [{"id": i, "name": out[i]} for i in sorted(out, key=lambda x: out[x])]
 
 
 @router.get("/enrollment/catalogs")
 def enrollment_catalogs(subject: str = Query(...), db: Session = Depends(get_db),
                         user: dict = Depends(require_perm("analytics"))):
-    """Catalog numbers offered for a subject (active enrollment sections).
-    Python-side union across all three per-term tables."""
-    catalogs = set()
-    for M in TERM_MODELS.values():
-        for (c,) in db.query(M.CatalogNum).filter(_enroll_sections(M), M.Subject == subject).distinct():
-            if c is not None:
-                catalogs.add(c)
-    return sorted(catalogs)
+    """Catalog numbers offered for a subject (active enrollment sections)."""
+    rows = db.query(ClassSchedule.CatalogNum).filter(
+        _enroll_sections(), ClassSchedule.Subject == subject).distinct().all()
+    return sorted({r[0] for r in rows if r[0] is not None})
 
 
 @router.get("/enrollment/course-by-instructor")
@@ -524,29 +488,26 @@ def course_by_instructor(subject: str = Query(...), catalog: int = Query(...),
                          metric: str = Query("enrollment", pattern="^(enrollment|fillrate)$"),
                          db: Session = Depends(get_db), user: dict = Depends(require_perm("analytics"))):
     """For one course (Subject + CatalogNum): per-instructor fill across terms.
-    Rows = instructors, columns = terms. metric enrollment | fillrate.
-    Python-side union across ClassSchedule2254/2261/2264; term key tags each row."""
+    Rows = instructors, columns = terms. metric enrollment | fillrate."""
+    rows = (db.query(
+                ClassSchedule.InstructorID.label("iid"),
+                ClassSchedule.InstructorLastName.label("ln"),
+                ClassSchedule.InstructorFirstName.label("fn"),
+                ClassSchedule.Term.label("term"),
+                func.sum(ClassSchedule.EnrollTotal).label("tot"),
+                func.sum(ClassSchedule.EnrollCap).label("cap"))
+            .filter(_enroll_sections(), ClassSchedule.Subject == subject,
+                    ClassSchedule.CatalogNum == catalog)
+            .group_by(ClassSchedule.InstructorID, ClassSchedule.InstructorLastName,
+                      ClassSchedule.InstructorFirstName, ClassSchedule.Term)
+            .all())
+    terms = sorted({r.term for r in rows})
     labels, cells = {}, {}
-    all_terms = []
-    for term_key, M in TERM_MODELS.items():
-        rows = (db.query(
-                    M.InstructorID.label("iid"),
-                    M.InstructorLastName.label("ln"),
-                    M.InstructorFirstName.label("fn"),
-                    func.sum(M.EnrollTotal).label("tot"),
-                    func.sum(M.EnrollCap).label("cap"))
-                .filter(_enroll_sections(M), M.Subject == subject,
-                        M.CatalogNum == catalog)
-                .group_by(M.InstructorID, M.InstructorLastName, M.InstructorFirstName)
-                .all())
-        if rows:
-            all_terms.append(term_key)
-        for r in rows:
-            name = f"{(r.fn or '')[:1]}. {r.ln or ''}".strip()
-            labels[r.iid] = f"{name} ({r.iid})" if r.iid else name or "Unknown"
-            tot, cap = r.tot or 0, r.cap or 0
-            cells[(r.iid, term_key)] = (round(100.0 * tot / cap, 1) if cap else 0) if metric == "fillrate" else tot
-    terms = sorted(all_terms)
+    for r in rows:
+        name = f"{(r.fn or '')[:1]}. {r.ln or ''}".strip()
+        labels[r.iid] = f"{name} ({r.iid})" if r.iid else name or "Unknown"
+        tot, cap = r.tot or 0, r.cap or 0
+        cells[(r.iid, r.term)] = (round(100.0 * tot / cap, 1) if cap else 0) if metric == "fillrate" else tot
     iids = sorted(labels, key=lambda i: labels[i])
     series = [(labels[i], [cells.get((i, t), 0) for t in terms]) for i in iids]
     return _normalized(terms, series)
@@ -558,14 +519,14 @@ def instructor_load(instructor_id: int = Query(...), term: Optional[str] = Query
     """All of an instructor's enrollment sections for a term: enrolled vs capacity
     per class (Subject + CatalogNum). Two series so the UI can show the total fill."""
     use_term = term or ACTIVE_TERM
-    M = _cls(use_term)
     rows = (db.query(
-                M.Subject.label("subject"),
-                M.CatalogNum.label("cat"),
-                func.sum(M.EnrollTotal).label("tot"),
-                func.sum(M.EnrollCap).label("cap"))
-            .filter(_enroll_sections(M), M.InstructorID == instructor_id)
-            .group_by(M.Subject, M.CatalogNum).all())
+                ClassSchedule.Subject.label("subject"),
+                ClassSchedule.CatalogNum.label("cat"),
+                func.sum(ClassSchedule.EnrollTotal).label("tot"),
+                func.sum(ClassSchedule.EnrollCap).label("cap"))
+            .filter(_enroll_sections(), ClassSchedule.InstructorID == instructor_id,
+                    ClassSchedule.Term == use_term)
+            .group_by(ClassSchedule.Subject, ClassSchedule.CatalogNum).all())
     rows = sorted(rows, key=lambda r: (r.subject or "", r.cat or 0))
     labels = [f"{r.subject} {r.cat}" for r in rows]
     return _normalized(labels, [
@@ -578,11 +539,7 @@ def instructor_load(instructor_id: int = Query(...), term: Optional[str] = Query
 def enrollment_levels(subject: str = Query(...), db: Session = Depends(get_db),
                       user: dict = Depends(require_perm("analytics"))):
     """Catalog 'hundreds' offered for a subject (active enrollment sections),
-    e.g. [100,200,300,400,500,700]. Drives which Level options the UI shows.
-    Python-side union across all three per-term tables."""
-    levels = set()
-    for M in TERM_MODELS.values():
-        for (c,) in db.query(M.CatalogNum).filter(_enroll_sections(M), M.Subject == subject).distinct():
-            if c is not None:
-                levels.add((c // 100) * 100)
-    return sorted(levels)
+    e.g. [100,200,300,400,500,700]. Drives which Level options the UI shows."""
+    rows = db.query(ClassSchedule.CatalogNum).filter(
+        _enroll_sections(), ClassSchedule.Subject == subject).distinct().all()
+    return sorted({(c[0] // 100) * 100 for c in rows if c[0] is not None})

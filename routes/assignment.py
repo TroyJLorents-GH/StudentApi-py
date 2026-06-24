@@ -7,7 +7,7 @@ import io
 from fastapi.responses import StreamingResponse, JSONResponse
 
 from models.assignment import StudentClassAssignment
-from models.class_schedule import ClassSchedule2254
+from models.class_schedule import ClassSchedule
 from schemas.assignment_dto import StudentAssignmentUpdateDto
 from database import get_db
 from utils.assignment_utils import calculate_compensation, compute_cost_center_key, infer_acad_career
@@ -109,7 +109,7 @@ async def calibrate_preview(
             raise HTTPException(422, f"Student not found for '{sid}' (row {idx})")
 
         classnum = row["ClassNum"].strip()
-        class_obj = db.query(ClassSchedule2254).filter_by(ClassNum=classnum).first()
+        class_obj = db.query(ClassSchedule).filter_by(ClassNum=classnum).first()
         if not class_obj:
             raise HTTPException(422, f"ClassNum not found: '{classnum}' (row {idx})")
 
@@ -170,7 +170,7 @@ def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_d
             raise HTTPException(422, f"Student '{student_id_or_asurite}' not found (row {idx})")
 
         class_num = row["ClassNum"].strip()
-        class_obj = db.query(ClassSchedule2254).filter_by(ClassNum=class_num).first()
+        class_obj = db.query(ClassSchedule).filter_by(ClassNum=class_num).first()
         if not class_obj:
             raise HTTPException(422, f"ClassNum '{class_num}' not found (row {idx})")
 
@@ -373,7 +373,7 @@ def bulk_edit_assignments(
 
         class_obj = None
         if "ClassNum" in edit and edit["ClassNum"] != orig.ClassNum:
-            class_obj = db.query(ClassSchedule2254).filter_by(ClassNum=edit["ClassNum"], Term=orig.Term).first()
+            class_obj = db.query(ClassSchedule).filter_by(ClassNum=edit["ClassNum"], Term=orig.Term).first()
             if not class_obj:
                 raise HTTPException(404, f"ClassNum {edit['ClassNum']} not found")
 

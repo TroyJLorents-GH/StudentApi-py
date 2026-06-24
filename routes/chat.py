@@ -9,7 +9,7 @@ Workaround: feed tool results back as plain user-role "[TOOL RESULT ...]"
 messages. See utils/test_gateway_tools*.py.
 
 READ-ONLY replica adaptation:
-- Uses per-term ClassSchedule tables (2254/2261/2264) via TERM_MODELS/_cls().
+- Single stacked ClassSchedule table (term filter via ACTIVE_TERM).
 - create_assignment tool removed; exactly 4 read tools remain.
 - InstructorEmail removed from assignment writes (write tool dropped entirely).
 """
@@ -27,23 +27,11 @@ from sqlalchemy.orm import Session
 from database import get_db
 from dependencies import require_perm
 from models.assignment import StudentClassAssignment
-from models.class_schedule import ClassSchedule2254, ClassSchedule2261, ClassSchedule2264, ACTIVE_TERM
+from models.class_schedule import ClassSchedule, ACTIVE_TERM
 from models.student import StudentLookup
 from routes.assignment import normalize_position, VALID_POSITIONS
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
-
-# Term-to-model mapping (same as analytics.py)
-TERM_MODELS = {
-    "2254": ClassSchedule2254,
-    "2261": ClassSchedule2261,
-    "2264": ClassSchedule2264,
-}
-
-
-def _cls(term):
-    """Return the correct per-term ClassSchedule model class."""
-    return TERM_MODELS.get(str(term or ACTIVE_TERM), ClassSchedule2264)
 
 
 # All hireable positions, canonical names.
@@ -186,8 +174,7 @@ def tool_lookup_student(db, user, student: str):
 
 
 def tool_lookup_class(db, user, class_num: str):
-    M = _cls(ACTIVE_TERM)
-    c = db.query(M).filter_by(ClassNum=str(class_num).strip()).first()
+    c = db.query(ClassSchedule).filter_by(ClassNum=str(class_num).strip()).first()
     if not c:
         return {"error": f"Class number '{class_num}' not found in the class schedule."}
     return {

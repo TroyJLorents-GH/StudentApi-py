@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from routes import student, assignment, class_schedule, application, manage_assignments
-from routes import auth, phd_application, faculty, admin_users
+from routes import auth, phd_application, faculty, admin_users, analytics
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 import os
@@ -37,6 +37,7 @@ app.include_router(manage_assignments.router)
 app.include_router(phd_application.router)
 app.include_router(faculty.router)
 app.include_router(admin_users.router)
+app.include_router(analytics.router)
 
 @app.get("/")
 def read_root():

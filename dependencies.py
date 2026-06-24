@@ -31,6 +31,8 @@ def current_user(request: Request, db: Session = Depends(get_db)) -> dict:
         "program_chair_uploads": bool(row.program_chair_uploads),
         "faculty_quickassign": bool(row.faculty_quickassign),
         "faculty_grader_uploads": bool(row.faculty_grader_uploads),
+        "analytics": bool(row.analytics),
+        "chat": bool(row.chat),
     }
     perms = merged_perms(row.role, flags)
 
@@ -42,3 +44,13 @@ def current_user(request: Request, db: Session = Depends(get_db)) -> dict:
         "email": row.email,
         "name": row.name,
     }
+
+
+def require_perm(flag: str):
+    """Dependency factory: allow admins or users whose perms[flag] is truthy; else 403."""
+    def _dep(user: dict = Depends(current_user)) -> dict:
+        perms = user.get("perms") or {}
+        if user.get("role") == "admin" or user.get("is_admin") or perms.get(flag):
+            return user
+        raise HTTPException(status_code=403, detail="forbidden")
+    return _dep

@@ -64,9 +64,12 @@ def allowed_positions(user: dict) -> list[str]:
         return ["Grader"]
     return []
 
-GATEWAY_URL = os.getenv("CREATEAI_BASE_URL", "https://api-main.aiml.asu.edu").rstrip("/") + "/v1/chat/completions"
-GATEWAY_KEY = os.getenv("CREATEAI_API_KEY")
-GATEWAY_MODEL = os.getenv("CREATEAI_MODEL", "aws/claude4_8_opus")
+# Gateway = ASU CreateAI, OpenAI-compatible /v1/chat/completions, one Bearer token.
+# Prefer the new ASU_* env names; fall back to legacy CREATEAI_* for compatibility.
+GATEWAY_BASE = os.getenv("ASU_GATEWAY_BASE") or os.getenv("CREATEAI_BASE_URL", "https://api-main.aiml.asu.edu")
+GATEWAY_URL = GATEWAY_BASE.rstrip("/") + "/v1/chat/completions"
+GATEWAY_KEY = os.getenv("ASU_AIML_TOKEN") or os.getenv("CREATEAI_API_KEY")
+GATEWAY_MODEL = os.getenv("ASU_GATEWAY_MODEL") or os.getenv("CREATEAI_MODEL", "aws/claude4_8_opus")
 
 MAX_TOOL_ROUNDS = 6
 
@@ -331,7 +334,7 @@ class ChatRequest(BaseModel):
 @router.post("")
 def chat(body: ChatRequest, db: Session = Depends(get_db), user: dict = Depends(require_perm("chat"))):
     if not GATEWAY_KEY:
-        raise HTTPException(500, "Chat gateway is not configured (CREATEAI_API_KEY missing).")
+        raise HTTPException(500, "Chat gateway is not configured (ASU_AIML_TOKEN missing).")
 
     display_name = user.get("name") or user.get("asurite", "there")
     positions = allowed_positions(user)

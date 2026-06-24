@@ -1,4 +1,4 @@
-from models.assignment import StudentClassAssignment
+﻿from models.assignment import StudentClassAssignment
 from collections import namedtuple
 
 # --- Compensation Calculation ---
@@ -93,95 +93,95 @@ CostCenterRule = namedtuple("CostCenterRule", ["position", "location", "campus",
 COST_CENTER_RULES = [
     # ===== TEMPE =====
     # TA
-    CostCenterRule("TA", "TEMPE",   "TEMPE", "UGRD", "CC0136/PG02202"),
-    CostCenterRule("TA", "TEMPE",   "TEMPE", "GRAD", "CC0136/PG06875"),
-    CostCenterRule("TA", "ICOURSE", "TEMPE", "UGRD", "CC0136/PG01943"),
-    CostCenterRule("TA", "ICOURSE", "TEMPE", "GRAD", "CC0136/PG06316"),
-    CostCenterRule("TA", "ASUONLINE", "TEMPE", "UGRD", "CC0136/PG01943"),
-    CostCenterRule("TA", "ASUONLINE", "TEMPE", "GRAD", "CC0136/PG06316"),
+    CostCenterRule("TA", "TEMPE",   "TEMPE", "UGRD", "CC9002/PG90003"),
+    CostCenterRule("TA", "TEMPE",   "TEMPE", "GRAD", "CC9002/PG90004"),
+    CostCenterRule("TA", "ICOURSE", "TEMPE", "UGRD", "CC9002/PG90005"),
+    CostCenterRule("TA", "ICOURSE", "TEMPE", "GRAD", "CC9002/PG90006"),
+    CostCenterRule("TA", "ASUONLINE", "TEMPE", "UGRD", "CC9002/PG90005"),
+    CostCenterRule("TA", "ASUONLINE", "TEMPE", "GRAD", "CC9002/PG90006"),
 
     # IA
-    CostCenterRule("IA", "TEMPE",   "TEMPE", "UGRD", "CC0136/PG15818"),
-    CostCenterRule("IA", "TEMPE",   "TEMPE", "GRAD", "CC0136/PG15818"),
-    CostCenterRule("IA", "ICOURSE", "TEMPE", "UGRD", "CC0136/PG01943"),
-    CostCenterRule("IA", "ICOURSE", "TEMPE", "GRAD", "CC0136/PG01943"),
-    CostCenterRule("IA", "ASUONLINE", "TEMPE", "UGRD", "CC0136/PG01943"),
-    CostCenterRule("IA", "ASUONLINE", "TEMPE", "GRAD", "CC0136/PG01943"),
+    CostCenterRule("IA", "TEMPE",   "TEMPE", "UGRD", "CC9002/PG90007"),
+    CostCenterRule("IA", "TEMPE",   "TEMPE", "GRAD", "CC9002/PG90007"),
+    CostCenterRule("IA", "ICOURSE", "TEMPE", "UGRD", "CC9002/PG90005"),
+    CostCenterRule("IA", "ICOURSE", "TEMPE", "GRAD", "CC9002/PG90005"),
+    CostCenterRule("IA", "ASUONLINE", "TEMPE", "UGRD", "CC9002/PG90005"),
+    CostCenterRule("IA", "ASUONLINE", "TEMPE", "GRAD", "CC9002/PG90005"),
 
     # Grader
-    CostCenterRule("Grader", "TEMPE",   "TEMPE", "UGRD", "CC0136/PG14700"),
-    CostCenterRule("Grader", "TEMPE",   "TEMPE", "GRAD", "CC0136/PG14700"),
-    CostCenterRule("Grader", "ICOURSE", "TEMPE", "UGRD", "CC0136/PG01943"),
-    CostCenterRule("Grader", "ICOURSE", "TEMPE", "GRAD", "CC0136/PG06316"),
-    CostCenterRule("Grader", "ASUONLINE", "TEMPE", "UGRD", "CC0136/PG01943"),
-    CostCenterRule("Grader", "ASUONLINE", "TEMPE", "GRAD", "CC0136/PG06316"),
-    CostCenterRule("Grader", "WEST",   "TEMPE", "UGRD", "CC0136/PG14700"),
+    CostCenterRule("Grader", "TEMPE",   "TEMPE", "UGRD", "CC9002/PG90008"),
+    CostCenterRule("Grader", "TEMPE",   "TEMPE", "GRAD", "CC9002/PG90008"),
+    CostCenterRule("Grader", "ICOURSE", "TEMPE", "UGRD", "CC9002/PG90005"),
+    CostCenterRule("Grader", "ICOURSE", "TEMPE", "GRAD", "CC9002/PG90006"),
+    CostCenterRule("Grader", "ASUONLINE", "TEMPE", "UGRD", "CC9002/PG90005"),
+    CostCenterRule("Grader", "ASUONLINE", "TEMPE", "GRAD", "CC9002/PG90006"),
+    CostCenterRule("Grader", "WEST",   "TEMPE", "UGRD", "CC9002/PG90008"),
 
     # TA (GSA) 1 credit
-    CostCenterRule("TA (GSA) 1 credit", "TEMPE",   "TEMPE", "UGRD", "CC0136/PG02202"),
-    CostCenterRule("TA (GSA) 1 credit", "TEMPE",   "TEMPE", "GRAD", "CC0136/PG06875"),
-    CostCenterRule("TA (GSA) 1 credit", "ICOURSE", "TEMPE", "UGRD", "CC0136/PG01943"),
-    CostCenterRule("TA (GSA) 1 credit", "ICOURSE", "TEMPE", "GRAD", "CC0136/PG06316"),
-    CostCenterRule("TA (GSA) 1 credit", "ASUONLINE", "TEMPE", "UGRD", "CC0136/PG01943"),
-    CostCenterRule("TA (GSA) 1 credit", "ASUONLINE", "TEMPE", "GRAD", "CC0136/PG06316"),
+    CostCenterRule("TA (GSA) 1 credit", "TEMPE",   "TEMPE", "UGRD", "CC9002/PG90003"),
+    CostCenterRule("TA (GSA) 1 credit", "TEMPE",   "TEMPE", "GRAD", "CC9002/PG90004"),
+    CostCenterRule("TA (GSA) 1 credit", "ICOURSE", "TEMPE", "UGRD", "CC9002/PG90005"),
+    CostCenterRule("TA (GSA) 1 credit", "ICOURSE", "TEMPE", "GRAD", "CC9002/PG90006"),
+    CostCenterRule("TA (GSA) 1 credit", "ASUONLINE", "TEMPE", "UGRD", "CC9002/PG90005"),
+    CostCenterRule("TA (GSA) 1 credit", "ASUONLINE", "TEMPE", "GRAD", "CC9002/PG90006"),
 
     # TA (GSA) 1 credit +
-    CostCenterRule("TA (GSA) 1 credit +", "TEMPE",   "TEMPE", "UGRD", "CC0136/PG02202"),
-    CostCenterRule("TA (GSA) 1 credit +", "TEMPE",   "TEMPE", "GRAD", "CC0136/PG06875"),
-    CostCenterRule("TA (GSA) 1 credit +", "ICOURSE", "TEMPE", "UGRD", "CC0136/PG01943"),
-    CostCenterRule("TA (GSA) 1 credit +", "ICOURSE", "TEMPE", "GRAD", "CC0136/PG06316"),
-    CostCenterRule("TA (GSA) 1 credit +", "ASUONLINE", "TEMPE", "UGRD", "CC0136/PG01943"),
-    CostCenterRule("TA (GSA) 1 credit +", "ASUONLINE", "TEMPE", "GRAD", "CC0136/PG06316"),
+    CostCenterRule("TA (GSA) 1 credit +", "TEMPE",   "TEMPE", "UGRD", "CC9002/PG90003"),
+    CostCenterRule("TA (GSA) 1 credit +", "TEMPE",   "TEMPE", "GRAD", "CC9002/PG90004"),
+    CostCenterRule("TA (GSA) 1 credit +", "ICOURSE", "TEMPE", "UGRD", "CC9002/PG90005"),
+    CostCenterRule("TA (GSA) 1 credit +", "ICOURSE", "TEMPE", "GRAD", "CC9002/PG90006"),
+    CostCenterRule("TA (GSA) 1 credit +", "ASUONLINE", "TEMPE", "UGRD", "CC9002/PG90005"),
+    CostCenterRule("TA (GSA) 1 credit +", "ASUONLINE", "TEMPE", "GRAD", "CC9002/PG90006"),
 
     # IOR
-    CostCenterRule("IOR", "TEMPE",   "TEMPE", "UGRD", "CC0136/PG02202"),
-    CostCenterRule("IOR", "TEMPE",   "TEMPE", "GRAD", "CC0136/PG06875"),
-    CostCenterRule("IOR", "ICOURSE", "TEMPE", "UGRD", "CC0136/PG01943"),
-    CostCenterRule("IOR", "ICOURSE", "TEMPE", "GRAD", "CC0136/PG06316"),
-    CostCenterRule("IOR", "ASUONLINE", "TEMPE", "UGRD", "CC0136/PG01943"),
-    CostCenterRule("IOR", "ASUONLINE", "TEMPE", "GRAD", "CC0136/PG06316"),
+    CostCenterRule("IOR", "TEMPE",   "TEMPE", "UGRD", "CC9002/PG90003"),
+    CostCenterRule("IOR", "TEMPE",   "TEMPE", "GRAD", "CC9002/PG90004"),
+    CostCenterRule("IOR", "ICOURSE", "TEMPE", "UGRD", "CC9002/PG90005"),
+    CostCenterRule("IOR", "ICOURSE", "TEMPE", "GRAD", "CC9002/PG90006"),
+    CostCenterRule("IOR", "ASUONLINE", "TEMPE", "UGRD", "CC9002/PG90005"),
+    CostCenterRule("IOR", "ASUONLINE", "TEMPE", "GRAD", "CC9002/PG90006"),
 
     # ===== POLY =====
     # TA
-    CostCenterRule("TA", "POLY",    "POLY",  "UGRD", "CC0136/PG02202"),
-    CostCenterRule("TA", "POLY",    "POLY",  "GRAD", "CC0136/PG06875"),
-    CostCenterRule("TA", "ICOURSE", "POLY",  "UGRD", "CC0136/PG02003"),
-    CostCenterRule("TA", "ASUONLINE", "POLY",  "UGRD", "CC0136/PG02003"),
+    CostCenterRule("TA", "POLY",    "POLY",  "UGRD", "CC9002/PG90003"),
+    CostCenterRule("TA", "POLY",    "POLY",  "GRAD", "CC9002/PG90004"),
+    CostCenterRule("TA", "ICOURSE", "POLY",  "UGRD", "CC9002/PG90009"),
+    CostCenterRule("TA", "ASUONLINE", "POLY",  "UGRD", "CC9002/PG90009"),
 
     # IA
-    CostCenterRule("IA", "POLY",    "POLY",  "UGRD", "CC0136/PG15818"),
-    CostCenterRule("IA", "POLY",    "POLY",  "GRAD", "CC0136/PG15818"),
-    CostCenterRule("IA", "ICOURSE", "POLY",  "UGRD", "CC0136/PG02003"),
-    CostCenterRule("IA", "ICOURSE", "POLY",  "GRAD", "CC0136/PG02003"),
-    CostCenterRule("IA", "ASUONLINE", "POLY", "UGRD", "CC0136/PG02003"),
-    CostCenterRule("IA", "ASUONLINE", "POLY", "GRAD", "CC0136/PG02003"),
+    CostCenterRule("IA", "POLY",    "POLY",  "UGRD", "CC9002/PG90007"),
+    CostCenterRule("IA", "POLY",    "POLY",  "GRAD", "CC9002/PG90007"),
+    CostCenterRule("IA", "ICOURSE", "POLY",  "UGRD", "CC9002/PG90009"),
+    CostCenterRule("IA", "ICOURSE", "POLY",  "GRAD", "CC9002/PG90009"),
+    CostCenterRule("IA", "ASUONLINE", "POLY", "UGRD", "CC9002/PG90009"),
+    CostCenterRule("IA", "ASUONLINE", "POLY", "GRAD", "CC9002/PG90009"),
 
     # Grader
-    CostCenterRule("Grader", "POLY",    "POLY",  "UGRD", "CC0136/PG14700"),
-    CostCenterRule("Grader", "POLY",    "POLY",  "GRAD", "CC0136/PG14700"),
-    CostCenterRule("Grader", "ICOURSE", "POLY",  "UGRD", "CC0136/PG02003"),
-    CostCenterRule("Grader", "ASUONLINE", "POLY", "UGRD", "CC0136/PG02003"),
+    CostCenterRule("Grader", "POLY",    "POLY",  "UGRD", "CC9002/PG90008"),
+    CostCenterRule("Grader", "POLY",    "POLY",  "GRAD", "CC9002/PG90008"),
+    CostCenterRule("Grader", "ICOURSE", "POLY",  "UGRD", "CC9002/PG90009"),
+    CostCenterRule("Grader", "ASUONLINE", "POLY", "UGRD", "CC9002/PG90009"),
 
     # TA (GSA) 1 credit
-    CostCenterRule("TA (GSA) 1 credit", "POLY",    "POLY",  "UGRD", "CC0136/PG02202"),
-    CostCenterRule("TA (GSA) 1 credit", "POLY",    "POLY",  "GRAD", "CC0136/PG06875"),
-    CostCenterRule("TA (GSA) 1 credit", "ICOURSE", "POLY",  "UGRD", "CC0136/PG02003"),
-    CostCenterRule("TA (GSA) 1 credit", "ASUONLINE", "POLY", "UGRD", "CC0136/PG02003"),
+    CostCenterRule("TA (GSA) 1 credit", "POLY",    "POLY",  "UGRD", "CC9002/PG90003"),
+    CostCenterRule("TA (GSA) 1 credit", "POLY",    "POLY",  "GRAD", "CC9002/PG90004"),
+    CostCenterRule("TA (GSA) 1 credit", "ICOURSE", "POLY",  "UGRD", "CC9002/PG90009"),
+    CostCenterRule("TA (GSA) 1 credit", "ASUONLINE", "POLY", "UGRD", "CC9002/PG90009"),
 
     # TA (GSA) 1 credit +
-    CostCenterRule("TA (GSA) 1 credit +", "POLY",    "POLY",  "UGRD", "CC0136/PG02202"),
-    CostCenterRule("TA (GSA) 1 credit +", "POLY",    "POLY",  "GRAD", "CC0136/PG06875"),
-    CostCenterRule("TA (GSA) 1 credit +", "ICOURSE", "POLY",  "UGRD", "CC0136/PG02003"),
-    CostCenterRule("TA (GSA) 1 credit +", "ASUONLINE", "POLY", "UGRD", "CC0136/PG02003"),
+    CostCenterRule("TA (GSA) 1 credit +", "POLY",    "POLY",  "UGRD", "CC9002/PG90003"),
+    CostCenterRule("TA (GSA) 1 credit +", "POLY",    "POLY",  "GRAD", "CC9002/PG90004"),
+    CostCenterRule("TA (GSA) 1 credit +", "ICOURSE", "POLY",  "UGRD", "CC9002/PG90009"),
+    CostCenterRule("TA (GSA) 1 credit +", "ASUONLINE", "POLY", "UGRD", "CC9002/PG90009"),
 
     # IOR
-    CostCenterRule("IOR", "POLY",    "POLY",  "UGRD", "CC0136/PG02202"),
-    CostCenterRule("IOR", "POLY",    "POLY",  "GRAD", "CC0136/PG06875"),
-    CostCenterRule("IOR", "ICOURSE", "POLY",  "UGRD", "CC0136/PG02003"),
-    CostCenterRule("IOR", "ASUONLINE", "POLY", "UGRD", "CC0136/PG02003"),
+    CostCenterRule("IOR", "POLY",    "POLY",  "UGRD", "CC9002/PG90003"),
+    CostCenterRule("IOR", "POLY",    "POLY",  "GRAD", "CC9002/PG90004"),
+    CostCenterRule("IOR", "ICOURSE", "POLY",  "UGRD", "CC9002/PG90009"),
+    CostCenterRule("IOR", "ASUONLINE", "POLY", "UGRD", "CC9002/PG90009"),
 
     # ===== WEST =====
-    CostCenterRule("Grader", "WEST", "WEST", "UGRD", "CC0136/PG14700"),
+    CostCenterRule("Grader", "WEST", "WEST", "UGRD", "CC9002/PG90008"),
 ]
 
 # --- Summer Cost Center Rules (terms ending in 4) ---
@@ -189,54 +189,54 @@ SummerCostCenterRule = namedtuple("SummerCostCenterRule", ["position", "location
 
 SUMMER_COST_CENTER_RULES = [
     # ===== TEMPE =====
-    SummerCostCenterRule("TA", "TEMPE", "TEMPE", "CC1139/PG08491 + DR07557"),
-    SummerCostCenterRule("TA", "ASUONLINE", "TEMPE", "CC0136/PG01943"),
-    SummerCostCenterRule("TA", "ICOURSE", "TEMPE", "CC0136/PG01943"),
+    SummerCostCenterRule("TA", "TEMPE", "TEMPE", "CC9001/PG90001 + DR00001"),
+    SummerCostCenterRule("TA", "ASUONLINE", "TEMPE", "CC9002/PG90005"),
+    SummerCostCenterRule("TA", "ICOURSE", "TEMPE", "CC9002/PG90005"),
 
-    SummerCostCenterRule("IOR", "TEMPE", "TEMPE", "CC1139/PG08491 + DR07557"),
-    SummerCostCenterRule("IOR", "ASUONLINE", "TEMPE", "CC0136/PG01943"),
-    SummerCostCenterRule("IOR", "ICOURSE", "TEMPE", "CC0136/PG01943"),
+    SummerCostCenterRule("IOR", "TEMPE", "TEMPE", "CC9001/PG90001 + DR00001"),
+    SummerCostCenterRule("IOR", "ASUONLINE", "TEMPE", "CC9002/PG90005"),
+    SummerCostCenterRule("IOR", "ICOURSE", "TEMPE", "CC9002/PG90005"),
 
-    SummerCostCenterRule("IA", "TEMPE", "TEMPE", "CC1139/PG08491 + DR07557"),
-    SummerCostCenterRule("IA", "ASUONLINE", "TEMPE", "CC0136/PG01943"),
-    SummerCostCenterRule("IA", "ICOURSE", "TEMPE", "CC0136/PG01943"),
+    SummerCostCenterRule("IA", "TEMPE", "TEMPE", "CC9001/PG90001 + DR00001"),
+    SummerCostCenterRule("IA", "ASUONLINE", "TEMPE", "CC9002/PG90005"),
+    SummerCostCenterRule("IA", "ICOURSE", "TEMPE", "CC9002/PG90005"),
 
-    SummerCostCenterRule("Grader", "TEMPE", "TEMPE", "CC1139/PG08491 + DR07557"),
-    SummerCostCenterRule("Grader", "ASUONLINE", "TEMPE", "CC0136/PG01943"),
-    SummerCostCenterRule("Grader", "ICOURSE", "TEMPE", "CC0136/PG01943"),
+    SummerCostCenterRule("Grader", "TEMPE", "TEMPE", "CC9001/PG90001 + DR00001"),
+    SummerCostCenterRule("Grader", "ASUONLINE", "TEMPE", "CC9002/PG90005"),
+    SummerCostCenterRule("Grader", "ICOURSE", "TEMPE", "CC9002/PG90005"),
 
-    SummerCostCenterRule("TA (GSA) 1 credit", "TEMPE", "TEMPE", "CC1139/PG08491 + DR07557"),
-    SummerCostCenterRule("TA (GSA) 1 credit", "ASUONLINE", "TEMPE", "CC0136/PG01943"),
-    SummerCostCenterRule("TA (GSA) 1 credit", "ICOURSE", "TEMPE", "CC0136/PG01943"),
+    SummerCostCenterRule("TA (GSA) 1 credit", "TEMPE", "TEMPE", "CC9001/PG90001 + DR00001"),
+    SummerCostCenterRule("TA (GSA) 1 credit", "ASUONLINE", "TEMPE", "CC9002/PG90005"),
+    SummerCostCenterRule("TA (GSA) 1 credit", "ICOURSE", "TEMPE", "CC9002/PG90005"),
 
-    SummerCostCenterRule("TA (GSA) 1 credit +", "TEMPE", "TEMPE", "CC1139/PG08491 + DR07557"),
-    SummerCostCenterRule("TA (GSA) 1 credit +", "ASUONLINE", "TEMPE", "CC0136/PG01943"),
-    SummerCostCenterRule("TA (GSA) 1 credit +", "ICOURSE", "TEMPE", "CC0136/PG01943"),
+    SummerCostCenterRule("TA (GSA) 1 credit +", "TEMPE", "TEMPE", "CC9001/PG90001 + DR00001"),
+    SummerCostCenterRule("TA (GSA) 1 credit +", "ASUONLINE", "TEMPE", "CC9002/PG90005"),
+    SummerCostCenterRule("TA (GSA) 1 credit +", "ICOURSE", "TEMPE", "CC9002/PG90005"),
 
     # ===== POLY =====
-    SummerCostCenterRule("TA", "POLY", "POLY", "CC1139/PG08524 + DR07557"),
-    SummerCostCenterRule("TA", "ASUONLINE", "POLY", "CC0136/PG02003"),
-    SummerCostCenterRule("TA", "ICOURSE", "POLY", "CC0136/PG02003"),
+    SummerCostCenterRule("TA", "POLY", "POLY", "CC9001/PG90002 + DR00001"),
+    SummerCostCenterRule("TA", "ASUONLINE", "POLY", "CC9002/PG90009"),
+    SummerCostCenterRule("TA", "ICOURSE", "POLY", "CC9002/PG90009"),
 
-    SummerCostCenterRule("IOR", "POLY", "POLY", "CC1139/PG08524 + DR07557"),
-    SummerCostCenterRule("IOR", "ASUONLINE", "POLY", "CC0136/PG02003"),
-    SummerCostCenterRule("IOR", "ICOURSE", "POLY", "CC0136/PG02003"),
+    SummerCostCenterRule("IOR", "POLY", "POLY", "CC9001/PG90002 + DR00001"),
+    SummerCostCenterRule("IOR", "ASUONLINE", "POLY", "CC9002/PG90009"),
+    SummerCostCenterRule("IOR", "ICOURSE", "POLY", "CC9002/PG90009"),
 
-    SummerCostCenterRule("IA", "POLY", "POLY", "CC1139/PG08524 + DR07557"),
-    SummerCostCenterRule("IA", "ASUONLINE", "POLY", "CC0136/PG02003"),
-    SummerCostCenterRule("IA", "ICOURSE", "POLY", "CC0136/PG02003"),
+    SummerCostCenterRule("IA", "POLY", "POLY", "CC9001/PG90002 + DR00001"),
+    SummerCostCenterRule("IA", "ASUONLINE", "POLY", "CC9002/PG90009"),
+    SummerCostCenterRule("IA", "ICOURSE", "POLY", "CC9002/PG90009"),
 
-    SummerCostCenterRule("Grader", "POLY", "POLY", "CC1139/PG08524 + DR07557"),
-    SummerCostCenterRule("Grader", "ASUONLINE", "POLY", "CC0136/PG02003"),
-    SummerCostCenterRule("Grader", "ICOURSE", "POLY", "CC0136/PG02003"),
+    SummerCostCenterRule("Grader", "POLY", "POLY", "CC9001/PG90002 + DR00001"),
+    SummerCostCenterRule("Grader", "ASUONLINE", "POLY", "CC9002/PG90009"),
+    SummerCostCenterRule("Grader", "ICOURSE", "POLY", "CC9002/PG90009"),
 
-    SummerCostCenterRule("TA (GSA) 1 credit", "POLY", "POLY", "CC1139/PG08524 + DR07557"),
-    SummerCostCenterRule("TA (GSA) 1 credit", "ASUONLINE", "POLY", "CC0136/PG02003"),
-    SummerCostCenterRule("TA (GSA) 1 credit", "ICOURSE", "POLY", "CC0136/PG02003"),
+    SummerCostCenterRule("TA (GSA) 1 credit", "POLY", "POLY", "CC9001/PG90002 + DR00001"),
+    SummerCostCenterRule("TA (GSA) 1 credit", "ASUONLINE", "POLY", "CC9002/PG90009"),
+    SummerCostCenterRule("TA (GSA) 1 credit", "ICOURSE", "POLY", "CC9002/PG90009"),
 
-    SummerCostCenterRule("TA (GSA) 1 credit +", "POLY", "POLY", "CC1139/PG08524 + DR07557"),
-    SummerCostCenterRule("TA (GSA) 1 credit +", "ASUONLINE", "POLY", "CC0136/PG02003"),
-    SummerCostCenterRule("TA (GSA) 1 credit +", "ICOURSE", "POLY", "CC0136/PG02003"),
+    SummerCostCenterRule("TA (GSA) 1 credit +", "POLY", "POLY", "CC9001/PG90002 + DR00001"),
+    SummerCostCenterRule("TA (GSA) 1 credit +", "ASUONLINE", "POLY", "CC9002/PG90009"),
+    SummerCostCenterRule("TA (GSA) 1 credit +", "ICOURSE", "POLY", "CC9002/PG90009"),
 ]
 
 
@@ -280,9 +280,10 @@ def infer_acad_career(row):
     return "UGRD" if 100 <= num <= 499 else "GRAD"
 
 
-RULES_VERSION = "2026-03-22"
+RULES_VERSION = "2026-06-23"
 
 
 def get_rules_version() -> str:
     """Return the current version of the compensation/cost center rules."""
     return RULES_VERSION
+

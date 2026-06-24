@@ -422,7 +422,6 @@ def offer_pipeline(term: Optional[str] = Query(None), db: Session = Depends(get_
     )
 
 
-# TODO(2.2): union across term tables — cross-term course report
 @router.get("/enrollment/course-by-term")
 def enrollment_course_by_term(metric: str = Query("enrollment", pattern="^(enrollment|fillrate)$"),
                               subject: Optional[str] = Query(None),
@@ -438,30 +437,32 @@ def enrollment_course_by_term(metric: str = Query("enrollment", pattern="^(enrol
     EnrollTotal) or 'fillrate' (EnrollTotal/EnrollCap %). Optional filters:
     subject, career (UGRD/GRAD), CatalogNum range (cat_min/cat_max). Top-N
     courses by total enrollment. Shape feeds the heatmap (course x term).
-
-    TODO(2.2): Currently queries only ACTIVE_TERM table as a stub. Full
-    cross-term implementation requires UNION across ClassSchedule2254/2261/2264.
+    Python-side union across ClassSchedule2254/2261/2264.
     """
-    # Stub: query ACTIVE_TERM table only until Task 2.2 implements union
-    M = _cls(ACTIVE_TERM)
-    q = db.query(
-        M.Subject.label("subject"),
-        M.CatalogNum.label("cat"),
-        func.sum(M.EnrollTotal).label("tot"),
-        func.sum(M.EnrollCap).label("cap"),
-    ).filter(_enroll_sections(M))
-    if subject:
-        q = q.filter(M.Subject == subject)
-    if career:
-        q = q.filter(M.AcadCareer == career)
-    if cat_min is not None:
-        q = q.filter(M.CatalogNum >= cat_min)
-    if cat_max is not None:
-        q = q.filter(M.CatalogNum <= cat_max)
-    rows = q.group_by(M.Subject, M.CatalogNum).all()
-    # Return single-term shape; Task 2.2 will add per-term columns
-    terms = [ACTIVE_TERM]
-    courses = {f"{r.subject} {r.cat}": {ACTIVE_TERM: (r.tot or 0, r.cap or 0)} for r in rows}
+    courses = {}
+    all_terms = []
+    for term_key, M in TERM_MODELS.items():
+        q = db.query(
+            M.Subject.label("subject"),
+            M.CatalogNum.label("cat"),
+            func.sum(M.EnrollTotal).label("tot"),
+            func.sum(M.EnrollCap).label("cap"),
+        ).filter(_enroll_sections(M))
+        if subject:
+            q = q.filter(M.Subject == subject)
+        if career:
+            q = q.filter(M.AcadCareer == career)
+        if cat_min is not None:
+            q = q.filter(M.CatalogNum >= cat_min)
+        if cat_max is not None:
+            q = q.filter(M.CatalogNum <= cat_max)
+        rows = q.group_by(M.Subject, M.CatalogNum).all()
+        if rows:
+            all_terms.append(term_key)
+        for r in rows:
+            courses.setdefault(f"{r.subject} {r.cat}", {})[term_key] = (r.tot or 0, r.cap or 0)
+
+    terms = sorted(all_terms)
 
     def total(c):
         return sum(t for t, _ in courses[c].values())
@@ -478,70 +479,74 @@ def enrollment_course_by_term(metric: str = Query("enrollment", pattern="^(enrol
     return _normalized(terms, series)
 
 
-# TODO(2.2): union across term tables — distinct subjects from all terms
 @router.get("/enrollment/subjects")
 def enrollment_subjects(db: Session = Depends(get_db), user: dict = Depends(require_perm("analytics"))):
     """Distinct subjects for the course-report filter dropdown.
-    TODO(2.2): Should union across all three per-term tables. Currently returns ACTIVE_TERM only."""
-    M = _cls(ACTIVE_TERM)
-    rows = db.query(M.Subject).distinct().all()
-    return sorted({r[0] for r in rows if r[0]})
+    Python-side union across all three per-term tables."""
+    subjects = set()
+    for M in TERM_MODELS.values():
+        for (s,) in db.query(M.Subject).filter(_enroll_sections(M)).distinct():
+            if s:
+                subjects.add(s)
+    return sorted(subjects)
 
 
-# TODO(2.2): union across term tables — distinct instructors from all terms
 @router.get("/enrollment/instructors")
 def enrollment_instructors(db: Session = Depends(get_db), user: dict = Depends(require_perm("analytics"))):
     """Instructors who teach enrollment sections — for the instructor-load dropdown.
-    TODO(2.2): Should union across all three per-term tables. Currently returns ACTIVE_TERM only."""
-    M = _cls(ACTIVE_TERM)
-    rows = (db.query(M.InstructorID, M.InstructorLastName, M.InstructorFirstName)
-            .filter(_enroll_sections(M)).distinct().all())
+    Python-side union across all three per-term tables; last-seen name wins per ID."""
     out = {}
-    for iid, ln, fn in rows:
-        if iid is None:
-            continue
-        out[iid] = f"{ln or ''}, {fn or ''}".strip().strip(",").strip()
+    for M in TERM_MODELS.values():
+        rows = (db.query(M.InstructorID, M.InstructorLastName, M.InstructorFirstName)
+                .filter(_enroll_sections(M)).distinct().all())
+        for iid, ln, fn in rows:
+            if iid is None:
+                continue
+            out[iid] = f"{ln or ''}, {fn or ''}".strip().strip(",").strip()
     return [{"id": i, "name": out[i]} for i in sorted(out, key=lambda x: out[x])]
 
 
-# TODO(2.2): union across term tables — distinct catalogs from all terms
 @router.get("/enrollment/catalogs")
 def enrollment_catalogs(subject: str = Query(...), db: Session = Depends(get_db),
                         user: dict = Depends(require_perm("analytics"))):
     """Catalog numbers offered for a subject (active enrollment sections).
-    TODO(2.2): Should union across all three per-term tables. Currently returns ACTIVE_TERM only."""
-    M = _cls(ACTIVE_TERM)
-    rows = db.query(M.CatalogNum).filter(
-        _enroll_sections(M), M.Subject == subject).distinct().all()
-    return sorted({r[0] for r in rows if r[0] is not None})
+    Python-side union across all three per-term tables."""
+    catalogs = set()
+    for M in TERM_MODELS.values():
+        for (c,) in db.query(M.CatalogNum).filter(_enroll_sections(M), M.Subject == subject).distinct():
+            if c is not None:
+                catalogs.add(c)
+    return sorted(catalogs)
 
 
-# TODO(2.2): union across term tables — cross-term per-instructor report
 @router.get("/enrollment/course-by-instructor")
 def course_by_instructor(subject: str = Query(...), catalog: int = Query(...),
                          metric: str = Query("enrollment", pattern="^(enrollment|fillrate)$"),
                          db: Session = Depends(get_db), user: dict = Depends(require_perm("analytics"))):
     """For one course (Subject + CatalogNum): per-instructor fill across terms.
     Rows = instructors, columns = terms. metric enrollment | fillrate.
-    TODO(2.2): Currently queries ACTIVE_TERM only. Full cross-term needs union."""
-    M = _cls(ACTIVE_TERM)
-    rows = (db.query(
-                M.InstructorID.label("iid"),
-                M.InstructorLastName.label("ln"),
-                M.InstructorFirstName.label("fn"),
-                func.sum(M.EnrollTotal).label("tot"),
-                func.sum(M.EnrollCap).label("cap"))
-            .filter(_enroll_sections(M), M.Subject == subject,
-                    M.CatalogNum == catalog)
-            .group_by(M.InstructorID, M.InstructorLastName, M.InstructorFirstName)
-            .all())
-    terms = [ACTIVE_TERM]
+    Python-side union across ClassSchedule2254/2261/2264; term key tags each row."""
     labels, cells = {}, {}
-    for r in rows:
-        name = f"{(r.fn or '')[:1]}. {r.ln or ''}".strip()
-        labels[r.iid] = f"{name} ({r.iid})" if r.iid else name or "Unknown"
-        tot, cap = r.tot or 0, r.cap or 0
-        cells[(r.iid, ACTIVE_TERM)] = (round(100.0 * tot / cap, 1) if cap else 0) if metric == "fillrate" else tot
+    all_terms = []
+    for term_key, M in TERM_MODELS.items():
+        rows = (db.query(
+                    M.InstructorID.label("iid"),
+                    M.InstructorLastName.label("ln"),
+                    M.InstructorFirstName.label("fn"),
+                    func.sum(M.EnrollTotal).label("tot"),
+                    func.sum(M.EnrollCap).label("cap"))
+                .filter(_enroll_sections(M), M.Subject == subject,
+                        M.CatalogNum == catalog)
+                .group_by(M.InstructorID, M.InstructorLastName, M.InstructorFirstName)
+                .all())
+        if rows:
+            all_terms.append(term_key)
+        for r in rows:
+            name = f"{(r.fn or '')[:1]}. {r.ln or ''}".strip()
+            labels[r.iid] = f"{name} ({r.iid})" if r.iid else name or "Unknown"
+            tot, cap = r.tot or 0, r.cap or 0
+            cells[(r.iid, term_key)] = (round(100.0 * tot / cap, 1) if cap else 0) if metric == "fillrate" else tot
+    terms = sorted(all_terms)
     iids = sorted(labels, key=lambda i: labels[i])
     series = [(labels[i], [cells.get((i, t), 0) for t in terms]) for i in iids]
     return _normalized(terms, series)
@@ -569,14 +574,15 @@ def instructor_load(instructor_id: int = Query(...), term: Optional[str] = Query
     ])
 
 
-# TODO(2.2): union across term tables — distinct catalog levels from all terms
 @router.get("/enrollment/levels")
 def enrollment_levels(subject: str = Query(...), db: Session = Depends(get_db),
                       user: dict = Depends(require_perm("analytics"))):
     """Catalog 'hundreds' offered for a subject (active enrollment sections),
     e.g. [100,200,300,400,500,700]. Drives which Level options the UI shows.
-    TODO(2.2): Should union across all three per-term tables. Currently returns ACTIVE_TERM only."""
-    M = _cls(ACTIVE_TERM)
-    rows = db.query(M.CatalogNum).filter(
-        _enroll_sections(M), M.Subject == subject).distinct().all()
-    return sorted({(c[0] // 100) * 100 for c in rows if c[0] is not None})
+    Python-side union across all three per-term tables."""
+    levels = set()
+    for M in TERM_MODELS.values():
+        for (c,) in db.query(M.CatalogNum).filter(_enroll_sections(M), M.Subject == subject).distinct():
+            if c is not None:
+                levels.add((c // 100) * 100)
+    return sorted(levels)

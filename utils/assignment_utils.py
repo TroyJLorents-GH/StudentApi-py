@@ -37,29 +37,29 @@ def calculate_compensation(a, term=None):
     # --- TA (GSA) 1 credit (PhD, Fulton Fellow: "No") ---
     if position == "TA (GSA) 1 credit" and level == "PHD" and fellow == "No":
         if h == 10 and session in ["A", "B", "C"]:
-            return 8093.00
+            return 8000.00
         if h == 20 and session in ["A", "B", "C"]:
-            return 17600.00
+            return 16000.00
 
     # --- TA (GSA) 1 credit + (PhD, Fulton Fellow: "No") ---
     if position == "TA (GSA) 1 credit +" and level == "PHD" and fellow == "No":
         if h == 10 and session in ["A", "B", "C"]:
-            return 8800.00
+            return 8500.00
 
     # --- TA ---
     if position == "TA":
         if h == 20 and level == "PHD" and fellow == "Yes" and session in ["A", "B", "C"]:
-            return 13461.15
+            return 13000.00
         if h == 10 and level == "PHD" and fellow == "Yes" and session in ["A", "B", "C"]:
-            return 6730.58
+            return 6500.00
         if h == 10 and level == "MS" and fellow == "No" and session in ["A", "B", "C"]:
-            return 6636.00
+            return 6000.00
         if h == 10 and level == "PHD" and fellow == "No" and session in ["A", "B", "C"]:
-            return 7250.00
+            return 7000.00
         if h == 20 and level == "MS" and fellow == "No" and session in ["A", "B", "C"]:
-            return 13272.00
+            return 12000.00
         if h == 20 and level == "PHD" and fellow == "No" and session in ["A", "B", "C"]:
-            return 14500.00
+            return 14000.00
 
     # --- IA (BS, MS or PHD, Fellow: No) ---
     if position == "IA" and level in ["BS", "MS", "PHD"] and fellow == "No":

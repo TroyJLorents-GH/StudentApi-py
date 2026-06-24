@@ -20,6 +20,41 @@ import os
 
 ACTIVE_TERM = os.getenv("ACTIVE_TERM", "2254")
 
+# Valid positions and their normalized forms
+VALID_POSITIONS = {
+    "ta": "TA",
+    "ia": "IA",
+    "grader": "Grader",
+    "ta (gsa) 1 credit": "TA (GSA) 1 credit",
+    "ta (gsa) 1 credit +": "TA (GSA) 1 credit +",
+}
+
+def normalize_position(position_str: str) -> str:
+    """
+    Normalize position input to handle different cases and spacing.
+    Returns the canonical form or raises ValueError if invalid.
+    """
+    if not position_str:
+        raise ValueError("Position cannot be empty")
+
+    # Strip whitespace and convert to lowercase for comparison
+    normalized = position_str.strip().lower()
+
+    # Find matching position (case-insensitive)
+    if normalized in VALID_POSITIONS:
+        return VALID_POSITIONS[normalized]
+
+    # Also check with extra spaces normalized
+    normalized_spaces = " ".join(normalized.split())
+    if normalized_spaces in VALID_POSITIONS:
+        return VALID_POSITIONS[normalized_spaces]
+
+    raise ValueError(
+        f"Invalid position '{position_str}'. Valid positions are: "
+        f"{', '.join(set(VALID_POSITIONS.values()))}"
+    )
+
+
 router = APIRouter(prefix="/api/StudentClassAssignment", tags=["StudentClassAssignment"])
 
 # --- Utility: Get changed fields (for bulk edit)
@@ -150,7 +185,7 @@ def upload_assignments(file: UploadFile = File(...), db: Session = Depends(get_d
             "EducationLevel": student.Degree,
             "FultonFellow": fulton_fellow,
             "ClassSession": session
-        })
+        }, term=class_obj.Term)
         cost_center = compute_cost_center_key({
             "Position": position,
             "Location": class_obj.Location,
@@ -348,7 +383,7 @@ def bulk_edit_assignments(
             "EducationLevel": orig.EducationLevel,
             "FultonFellow": orig.FultonFellow,
             "ClassSession": class_obj.Session if class_obj else orig.ClassSession
-        })
+        }, term=orig.Term)
         cost_center = compute_cost_center_key({
             "Position": edit["Position"],
             "Location": class_obj.Location if class_obj else orig.Location,

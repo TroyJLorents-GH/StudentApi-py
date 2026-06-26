@@ -15,24 +15,24 @@ def calculate_compensation(a, term=None):
     if position == "Grader" and level in ["BS", "MS", "PHD"] and fellow == "No":
         if h == 5:
             if session in ["A", "B"]:
-                return 781
+                return 800
             if session == "C":
-                return 1562
+                return 1600
         if h == 10:
             if session in ["A", "B"]:
-                return 1562
+                return 1600
             if session == "C":
-                return 3124
+                return 3200
         if h == 15:
             if session in ["A", "B"]:
-                return 2343
+                return 2400
             if session == "C":
-                return 4686
+                return 4800
         if h == 20:
             if session in ["A", "B"]:
-                return 3124
+                return 3200
             if session == "C":
-                return 6248
+                return 6400
 
     # --- TA (GSA) 1 credit (PhD, Fulton Fellow: "No") ---
     if position == "TA (GSA) 1 credit" and level == "PHD" and fellow == "No":
@@ -65,24 +65,24 @@ def calculate_compensation(a, term=None):
     if position == "IA" and level in ["BS", "MS", "PHD"] and fellow == "No":
         if h == 5:
             if session in ["A", "B"]:
-                return 1100
+                return 1200
             if session == "C":
-                return 2200
+                return 2400
         if h == 10:
             if session in ["A", "B"]:
-                return 2200
+                return 2400
             if session == "C":
-                return 4400
+                return 4600
         if h == 15:
             if session in ["A", "B"]:
-                return 2640
+                return 2800
             if session == "C":
-                return 6600
+                return 7000
         if h == 20:
             if session in ["A", "B"]:
-                return 4400
+                return 4600
             if session == "C":
-                return 8800
+                return 9200
 
     return 0
 

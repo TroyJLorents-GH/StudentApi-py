@@ -393,8 +393,8 @@ def offer_pipeline(term: Optional[str] = Query(None), db: Session = Depends(get_
     base = db.query(StudentClassAssignment).filter(_hired_filter(), StudentClassAssignment.Term == use_term)
     hired = base.count()
     offer_sent = base.filter(StudentClassAssignment.Offer_Sent.isnot(None)).count()
-    offer_signed = base.filter(StudentClassAssignment.Offer_Signed.is_(True)).count()
-    workday = base.filter(StudentClassAssignment.Offer_Signed_Workday.is_(True)).count()
+    offer_signed = base.filter(StudentClassAssignment.Offer_Signed == True).count()  # noqa: E712 (MSSQL BIT = 1)
+    workday = base.filter(StudentClassAssignment.Offer_Signed_Workday == True).count()  # noqa: E712
     return _normalized(
         ["Hired", "Offer sent", "Offer signed", "Workday complete"],
         [("Count", [hired, offer_sent, offer_signed, workday])],

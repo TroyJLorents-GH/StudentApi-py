@@ -72,8 +72,28 @@ IF NOT EXISTS (SELECT 1 FROM dbo.user_access WHERE asu_id='demo_chair')
         faculty_dashboard, applications, student_summary_page, bulk_upload_assignments,
         assignment_adder, program_chair_uploads)
     VALUES ('demo_chair','program_chair','Demo Chair','chair@example.edu',1,0,0,1,1,1,1,1,1);
+-- Admin must have EVERY perm = 1. dependencies.py overlays a full bool dict
+-- onto role defaults, so any column left unset (NULL->0) overrides the admin
+-- role's all-True default back to False (e.g. faculty_dashboard -> 403).
 IF NOT EXISTS (SELECT 1 FROM dbo.user_access WHERE asu_id='demo_admin')
-    INSERT INTO dbo.user_access (asu_id, role, name, email, login, analytics, chat, master_dashboard)
-    VALUES ('demo_admin','admin','Demo Admin','admin@example.edu',1,1,1,1);
+    INSERT INTO dbo.user_access (asu_id, role, name, email,
+        login, analytics, chat, master_dashboard, faculty_dashboard,
+        assignment_adder, applications, phd_applications, student_summary_page,
+        bulk_upload_assignments, manage_assignments, program_chair_uploads,
+        faculty_quickassign, faculty_grader_uploads)
+    VALUES ('demo_admin','admin','Demo Admin','admin@example.edu',
+        1,1,1,1,1, 1,1,1,1, 1,1,1, 1,1);
+
+-- HR: role 'hr' (not in ROLE_DEFAULTS) -> perms = exactly the flags set here.
+-- Access: Student Assignment Dashboard (faculty_dashboard), HR Master Dashboard
+-- (master_dashboard), Analytics (analytics). Everything else off.
+IF NOT EXISTS (SELECT 1 FROM dbo.user_access WHERE asu_id='demo_hr')
+    INSERT INTO dbo.user_access (asu_id, role, name, email,
+        login, analytics, chat, master_dashboard, faculty_dashboard,
+        assignment_adder, applications, phd_applications, student_summary_page,
+        bulk_upload_assignments, manage_assignments, program_chair_uploads,
+        faculty_quickassign, faculty_grader_uploads)
+    VALUES ('demo_hr','hr','Demo HR','hr@example.edu',
+        1,1,0,1,1, 0,0,0,0, 0,0,0, 0,0);
 
 /* Active term for this data is 2261 — set ACTIVE_TERM=2261 in .env / Azure config. */

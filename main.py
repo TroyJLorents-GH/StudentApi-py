@@ -22,6 +22,9 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    # Allow any local dev port (CRA may pick 3000/3001/3002/...). Credentialed
+    # requests can't use "*", so match localhost/127.0.0.1 on any port via regex.
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

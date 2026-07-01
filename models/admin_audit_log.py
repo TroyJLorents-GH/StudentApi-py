@@ -4,7 +4,8 @@ from database import Base
 
 
 class AdminAuditLog(Base):
-    __tablename__ = "AdminAuditLog"
+    # Azure DB table is lowercase `admin_audit_log` with no created_at column.
+    __tablename__ = "admin_audit_log"
     __table_args__ = {'schema': 'dbo'}
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -14,4 +15,3 @@ class AdminAuditLog(Base):
     status = Column(String(20), nullable=False)
     summary = Column(String(500), nullable=True)
     details = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)

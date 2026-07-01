@@ -18,3 +18,11 @@ Task 4.1 (scrub real values): complete (commit 3a0aec0 + BOM fix 01f5ea0, review
 Task 5.2 (Login role-picker): complete (commit 0d64854 in ui-student-py, reviewed inline clean). Task 5.3: no-op (analytics components pre-synced). Empty placeholder commit dropped.
 ALL PLAN TASKS COMPLETE — final whole-branch review next.
 Final whole-branch review: READY TO MERGE (no Critical/Important). M1 ACTIVE_TERM pinned (2254, data lives there). Migration updated to create ClassSchedule2264. Gateway live-tested 200/pong. Open: lump-sum scrub (pre-deploy fast-follow), B trim assign_capability (optional).
+
+## 2026-06-24 | feat/replica-sync-portfolio-rbac
+PIVOT: consolidated per-term tables -> single ClassSchedule (renamed 2261). Ran migration on Azure live (rename, cols, AdminAuditLog, analytics/chat flags, parity, 3 demo users). Code: model single ClassSchedule (InstructMode->InstructorMode), analytics re-synced from source, class/assignment/chat routes updated. Committed cc1c0b6. LIVE-VERIFIED: analytics kpis/by-subject/mode-mix/students 200 w/ real data; RBAC faculty=403 admin=200; chat read tools work; gateway pong. .env ACTIVE_TERM=2261.
+OPEN: (1) assignments are Term 2254 vs classes 2261 -> hiring KPIs 0 at active term; (2) lump-sum scrub before deploy.
+
+## 2026-06-25 | feat/replica-sync-portfolio-rbac
+GOT IT WORKING. Aligned 17 assignments to Term 2261. Fixed offer-pipeline (.is_(True)->==True for MSSQL BIT, commit 45c9211). LIVE-VERIFIED on Azure: 25/25 analytics endpoints 200 (hiring 10 hires/$32448, offer-pipeline, grader-ratio all populated); RBAC admin/faculty enforced; chat full LLM round-trip 200 + stays read-only. Backend DONE.
+OPEN: lump-sum scrub before deploy; for Azure deploy set ASU_AIML_TOKEN + ACTIVE_TERM=2261 in App Service config.

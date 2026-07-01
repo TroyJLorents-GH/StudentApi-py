@@ -268,20 +268,67 @@ def get_my_uploads(db: Session = Depends(get_db), user: dict = Depends(current_u
     ).all()
 
 # --- Get total hours by student
-@router.get("/totalhours/{student_id}", response_model=int)
+@router.get("/totalhours/{student_id}")
 def get_total_hours(student_id: int, db: Session = Depends(get_db)):
-    total = db.query(StudentClassAssignment).filter(
+    """
+    Returns hours grouped by session and remaining hours for each session.
+    Sessions: A (first half), B (second half), C (full semester/both halves).
+    DYN (dynamic late-start/early-end) counts as C.
+
+    Cap is 40 for summer terms (Term ends in '4'), otherwise 20.
+
+    Session C counts against both A and B limits:
+    - remainingA = max(0, cap - hoursA - hoursC)
+    - remainingB = max(0, cap - hoursB - hoursC)
+    - remainingC = max(0, min(remainingA, remainingB))
+    """
+    assignments = db.query(StudentClassAssignment).filter(
         StudentClassAssignment.Student_ID == student_id,
+        StudentClassAssignment.Term == ACTIVE_TERM,
         or_(
             StudentClassAssignment.Instructor_Edit == None,
             StudentClassAssignment.Instructor_Edit == '',
-            StudentClassAssignment.Instructor_Edit == 'N'  # if you use this as a default for active
+            StudentClassAssignment.Instructor_Edit == 'N'
         )
     ).with_entities(
-        StudentClassAssignment.WeeklyHours
+        StudentClassAssignment.WeeklyHours,
+        StudentClassAssignment.ClassSession
     ).all()
 
-    return sum([a[0] for a in total])
+    # Group hours by session (DYN counts as C)
+    hours_a = 0
+    hours_b = 0
+    hours_c = 0
+
+    for hours, session in assignments:
+        if hours is None:
+            continue
+        session_upper = (session or '').upper().strip()
+        if session_upper == 'A':
+            hours_a += hours
+        elif session_upper == 'B':
+            hours_b += hours
+        elif session_upper in ('C', 'DYN'):
+            hours_c += hours
+
+    # Cap is 40 in summer (term ends in 4), else 20
+    cap = 40 if str(ACTIVE_TERM).endswith("4") else 20
+
+    # Calculate remaining hours per session
+    remaining_a = max(0, cap - hours_a - hours_c)
+    remaining_b = max(0, cap - hours_b - hours_c)
+    remaining_c = max(0, min(remaining_a, remaining_b))
+
+    return {
+        "hoursA": hours_a,
+        "hoursB": hours_b,
+        "hoursC": hours_c,
+        "remainingA": remaining_a,
+        "remainingB": remaining_b,
+        "remainingC": remaining_c,
+        "cap": cap,
+        "total": hours_a + hours_b + hours_c  # For backwards compatibility
+    }
 
 # POST single assignment
 @router.post("/", status_code=201)

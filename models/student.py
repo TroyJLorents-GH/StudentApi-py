@@ -41,3 +41,8 @@ class StudentLookup(Base):
     Expected_Graduation_Term = Column(String(50), nullable=True)
     Campus = Column(String(50), nullable=False)
     Deans_List = Column(String(50), nullable=False)
+
+    Prog_Reason_Descr = Column(String(100), nullable=True)
+    Residency = Column(String(10), nullable=True)
+    Residency_Status = Column(String(10), nullable=True)
+    Market = Column(String(50), nullable=True)

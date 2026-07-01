@@ -32,6 +32,8 @@ def get_user_and_perms(asurite: str) -> dict:
             "program_chair_uploads": bool(row.program_chair_uploads),
             "faculty_quickassign": bool(row.faculty_quickassign),
             "faculty_grader_uploads": bool(row.faculty_grader_uploads),
+            "analytics": bool(row.analytics),
+            "chat": bool(row.chat),
         }
 
         perms = merged_perms(row.role, row_flags)

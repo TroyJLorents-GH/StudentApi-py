@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from routes import student, assignment, class_schedule, application, manage_assignments
-from routes import auth, phd_application, faculty, admin_users
+from routes import auth, phd_application, faculty, admin_users, analytics, chat
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 import os
@@ -22,6 +22,9 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    # Allow any local dev port (CRA may pick 3000/3001/3002/...). Credentialed
+    # requests can't use "*", so match localhost/127.0.0.1 on any port via regex.
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,6 +40,8 @@ app.include_router(manage_assignments.router)
 app.include_router(phd_application.router)
 app.include_router(faculty.router)
 app.include_router(admin_users.router)
+app.include_router(analytics.router)
+app.include_router(chat.router)
 
 @app.get("/")
 def read_root():

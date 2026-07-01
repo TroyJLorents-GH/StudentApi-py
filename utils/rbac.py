@@ -12,6 +12,8 @@ ROLE_DEFAULTS = {
         "program_chair_uploads": True,
         "faculty_quickassign": True,
         "faculty_grader_uploads": True,
+        "analytics": True,
+        "chat": True,
     },
     "program_chair": {
         "assignment_adder": True,
@@ -26,6 +28,8 @@ ROLE_DEFAULTS = {
         "program_chair_uploads": True,
         "faculty_quickassign": False,
         "faculty_grader_uploads": False,
+        "analytics": False,
+        "chat": False,
     },
     "faculty_grader": {
         "assignment_adder": False,
@@ -40,6 +44,8 @@ ROLE_DEFAULTS = {
         "program_chair_uploads": False,
         "faculty_quickassign": True,
         "faculty_grader_uploads": True,
+        "analytics": False,
+        "chat": False,
     },
     "default": {
         "assignment_adder": False,
@@ -54,6 +60,8 @@ ROLE_DEFAULTS = {
         "program_chair_uploads": False,
         "faculty_quickassign": False,
         "faculty_grader_uploads": False,
+        "analytics": False,
+        "chat": False,
     },
 }
 

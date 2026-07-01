@@ -50,3 +50,9 @@ class StudentClassAssignment(Base):
     ImportedBy = Column(String, nullable=True)
     Notes = Column(String, nullable=True)
     Status = Column(String, nullable=True)
+
+    Prog_Reason_Descr = Column(String(100), nullable=True)
+    Residency = Column(String(10), nullable=True)
+    Residency_Status = Column(String(10), nullable=True)
+    Market = Column(String(50), nullable=True)
+    Offer_Signed_Workday = Column(Boolean, nullable=True)
